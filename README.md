@@ -8,7 +8,7 @@ Nguyễn Minh Quân
 
 Huỳnh Tấn Đạt
 ## Nhiệm vụ
-1. Thiết kế hệ thống, class, đa hình
+1. **feature/model** Thiết kế hệ thống, class, đa hình  
     - TaiKhoan hoặc BankAccount là lớp cha
     - Các lớp con:
     - TaiKhoanTietKiem
@@ -19,7 +19,7 @@ Huỳnh Tấn Đạt
     - tinhLai()
     - phiDuyTri()
     - hienThiThongTin()
-2. Các form nên làm
+2. **feature/ui** Các form nên làm                   
     - Form đăng nhập
     - Form menu chính
     - Form quản lý khách hàng
@@ -32,7 +32,7 @@ Huỳnh Tấn Đạt
     - datagridview hoặc table
     - combobox chọn loại tài khoản
     - label thông báo lỗi
-3. Chức năng ngân hàng
+3. **feature/business** Chức năng ngân hàng
     - thêm tài khoản
     - xóa tài khoản
     - sửa thông tin tài khoản
@@ -47,7 +47,7 @@ Huỳnh Tấn Đạt
     - tài khoản tiết kiệm có điều kiện rút
     - tài khoản khác nhau có cách tính phí/lãi khác nhau
     - đây chính là chỗ dùng đa hình
-4. File dữ liệu, test, tích hợp
+4. **feature/data** File dữ liệu, test, tích hợp
     - lưu dữ liệu ra file .txt, .json, hoặc .xml
     - đọc dữ liệu từ file khi mở chương trình
     - viết test case
