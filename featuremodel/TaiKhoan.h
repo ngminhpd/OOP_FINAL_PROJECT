@@ -23,6 +23,7 @@ public:
     virtual std::string HienThiThongTin() const;
 
     std::string GetSoTaiKhoan() const;
+    std::string GetTenKhachHang() const;
     double GetSoDu() const;
 };
 
@@ -47,6 +48,9 @@ private:
 public:
     TaiKhoanTietKiem(std::string, std::string, double, double, int);
 
+    double GetLaiSuat() const;
+    int GetKyHan() const;
+
     bool RutTien(double) override;
     double TinhLai() override;
     double PhiDuyTri() override;
@@ -60,6 +64,8 @@ private:
 
 public:
     TaiKhoanTinDung(std::string, std::string, double, double);
+
+    double GetHanMuc() const;
 
     bool RutTien(double) override;
     double TinhLai() override;

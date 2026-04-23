@@ -34,6 +34,7 @@ std::string TaiKhoan::HienThiThongTin() const {
 }
 
 std::string TaiKhoan::GetSoTaiKhoan() const { return SoTaiKhoan; }
+std::string TaiKhoan::GetTenKhachHang() const { return TenKhachHang; }
 double TaiKhoan::GetSoDu() const { return SoDu; }
 
 // ===== Thanh Toán =====
@@ -64,6 +65,9 @@ std::string TaiKhoanThanhToan::HienThiThongTin() const {
 TaiKhoanTietKiem::TaiKhoanTietKiem(std::string a, std::string b, double c, double ls, int kh)
     : TaiKhoan(a, b, c), LaiSuat(ls), KyHan(kh) {}
 
+double TaiKhoanTietKiem::GetLaiSuat() const { return LaiSuat; }
+int TaiKhoanTietKiem::GetKyHan() const { return KyHan; }
+
 bool TaiKhoanTietKiem::RutTien(double soTien) {
     if (soTien == SoDu) {
         SoDu = 0;
@@ -93,6 +97,8 @@ std::string TaiKhoanTietKiem::HienThiThongTin() const {
 // ===== Tín Dụng =====
 TaiKhoanTinDung::TaiKhoanTinDung(std::string a, std::string b, double c, double hm)
     : TaiKhoan(a, b, c), HanMuc(hm) {}
+
+double TaiKhoanTinDung::GetHanMuc() const { return HanMuc; }
 
 bool TaiKhoanTinDung::RutTien(double soTien) {
     if (soTien > 0 && SoDu + soTien <= HanMuc) {
