@@ -120,6 +120,10 @@ void NganHang::LietKeDanhSach() const {
     }
 }
 
+void NganHang::NapLichSu(std::string stk, std::string loai, double tien, std::string nd) {
+    dsLichSu[stk].emplace_back(loai, tien, nd);
+}
+
 void NganHang::InSaoKe(std::string soTK) {
     if (dsLichSu.count(soTK)) {
         std::cout << "--- SAO KE TAI KHOAN " << soTK << " ---\n";

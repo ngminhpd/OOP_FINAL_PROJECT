@@ -8,14 +8,15 @@ class TaiKhoan {
 protected:
     std::string SoTaiKhoan;
     std::string TenKhachHang;
+    std::string MaPIN; // Thuộc tính mới
     double SoDu;
+    bool DaKhoa; // Thuộc tính mới
 
 public:
-    TaiKhoan(std::string soTK, std::string tenKH, double soDu);
+    TaiKhoan(std::string soTK, std::string tenKH, double soDu, std::string pin = "1234", bool khoa = false);
     virtual ~TaiKhoan();
 
     virtual void NapTien(double soTien);
-
     virtual bool RutTien(double soTien) = 0;
     virtual double TinhLai() = 0;
     virtual double PhiDuyTri() = 0;
@@ -24,17 +25,19 @@ public:
 
     std::string GetSoTaiKhoan() const;
     std::string GetTenKhachHang() const;
+    std::string GetMaPIN() const;
+    bool IsLocked() const { return DaKhoa; } // Getter
+    void SetLocked(bool status) { DaKhoa = status; } // Setter
     double GetSoDu() const;
     void SetTenKhachHang(std::string ten);
+    void SetMaPIN(std::string pin);
 };
 
 class TaiKhoanThanhToan : public TaiKhoan {
 private:
     const double PHI_DUY_TRI = 11000.0;
-
 public:
-    TaiKhoanThanhToan(std::string, std::string, double);
-
+    TaiKhoanThanhToan(std::string, std::string, double, std::string pin = "1234", bool khoa = false);
     bool RutTien(double) override;
     double TinhLai() override;
     double PhiDuyTri() override;
@@ -45,13 +48,10 @@ class TaiKhoanTietKiem : public TaiKhoan {
 private:
     double LaiSuat;
     int KyHan;
-
 public:
-    TaiKhoanTietKiem(std::string, std::string, double, double, int);
-
+    TaiKhoanTietKiem(std::string, std::string, double, double, int, std::string pin = "1234");
     double GetLaiSuat() const;
     int GetKyHan() const;
-
     bool RutTien(double) override;
     double TinhLai() override;
     double PhiDuyTri() override;
@@ -62,12 +62,9 @@ class TaiKhoanTinDung : public TaiKhoan {
 private:
     double HanMuc;
     const double PHI = 50000.0;
-
 public:
-    TaiKhoanTinDung(std::string, std::string, double, double);
-
+    TaiKhoanTinDung(std::string, std::string, double, double, std::string pin = "1234");
     double GetHanMuc() const;
-
     bool RutTien(double) override;
     double TinhLai() override;
     double PhiDuyTri() override;
