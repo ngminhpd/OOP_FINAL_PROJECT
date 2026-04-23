@@ -7,6 +7,19 @@ Nguyễn Hoàng Khang
 Nguyễn Minh Quân
 
 Huỳnh Tấn Đạt
+
+## Lịch sử commit
+| Ngày      |                     Nội dung                   | Thành viên    | Xác nhận      | Ghi chú |
+|-----------|------------------------------------------------|---------------|---------------|---------|
+|  15/4/26  |            Tạo REAME.md                        |   Tất cả      | Hoàn thành    |         |
+|  23/4/26  |       Thiết kế hệ thống, class, đa hình        |   Khang       | Hoàn thành    | Push    |
+|  23/4/26  |             ...                                |   Minh        | Hoàn thành    | Merge   |
+|           |                                                |               |               |         |
+|           |                                                |               |               |         |
+|           |                                                |               |               |         |
+|           |                                                |               |               |         |
+|           |                                                |               |               |         |
+
 ## Nhiệm vụ
 1. **`feature/model`** Thiết kế hệ thống, class, đa hình  
     - TaiKhoan hoặc BankAccount là lớp cha
@@ -66,14 +79,4 @@ Huỳnh Tấn Đạt
 |   3      |      Quân              |
 |   4      |      Minh              |
 
-## Lịch sử commit
-| Ngày      |                     Nội dung                   | Thành viên    | Xác nhận      | Ghi chú |
-|-----------|------------------------------------------------|---------------|---------------|---------|
-|  15/4/26  |            Tạo REAME.md                        |   Tất cả      | Hoàn thành    |         |
-|           |                                                |               |               |         |
-|           |                                                |               |               |         |
-|           |                                                |               |               |         |
-|           |                                                |               |               |         |
-|           |                                                |               |               |         |
-|           |                                                |               |               |         |
-|           |                                                |               |               |         |
+
