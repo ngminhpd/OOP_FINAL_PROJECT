@@ -39,7 +39,7 @@ public:
     void ChuyenTien(std::string soTK_Nguon, std::string soTK_Dich, double soTien, std::string pin);
 
     // Tra cuu
-    void LietKeDanhSach() const;
+    std::string LietKeDanhSach() const;
     void InSaoKe(std::string soTK);
     void NapLichSu(std::string stk, std::string loai, double tien, std::string nd);
     
