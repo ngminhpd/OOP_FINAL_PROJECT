@@ -112,12 +112,13 @@ void NganHang::ChuyenTien(std::string soTK_Nguon, std::string soTK_Dich, double 
     }
 }
 
-void NganHang::LietKeDanhSach() const {
-    std::cout << "--- DANH SACH TAI KHOAN ---\n";
+std::string NganHang::LietKeDanhSach() const {
+    std::string res = "--- DANH SACH TAI KHOAN ---\n";
     for (const auto& tk : danhSachTaiKhoan) {
-        std::cout << tk->HienThiThongTin() 
-                  << (dsKhoa.at(tk->GetSoTaiKhoan()) ? " [DANG KHOA]" : " [ACTIVE]") << "\n";
+        res += tk->HienThiThongTin() 
+            + (dsKhoa.at(tk->GetSoTaiKhoan()) ? " [DANG KHOA]" : " [ACTIVE]") + "\n";
     }
+    return res;
 }
 
 void NganHang::NapLichSu(std::string stk, std::string loai, double tien, std::string nd) {

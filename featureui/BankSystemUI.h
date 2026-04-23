@@ -109,8 +109,26 @@ public:
     AdminMenuForm(Business::NganHang& nh) : BaseForm(nh) {}
     int Show() override {
         Components::Header("ADMIN MENU");
-        int c = Components::Menu({"QL Khach hang", "QL Tai khoan", "Giao dich tai quay", "Sao ke he thong"});
-        if (c == 0) return 1; return c + 2;
+        int c = Components::Menu({"QL Khach hang", "QL Tai khoan", "Giao dich tai quay", "Sao ke he thong", "Liet ke danh sach (Console Style)", "Tinh lai cho tat ca"});
+        if (c == 1) return 3;
+        if (c == 2) return 4;
+        if (c == 3) return 5;
+        if (c == 4) return 6;
+        if (c == 5) {
+            std::string ds = nganHang.LietKeDanhSach();
+            Components::Header("KET QUA LIET KE");
+            std::cout << ds << std::endl;
+            system("pause");
+            return 2;
+        }
+        if (c == 6) {
+            nganHang.TinhLaiVaCapNhat();
+            SyncData();
+            Components::Label("Da tinh lai va cap nhat cho tat ca tai khoan!");
+            system("pause");
+            return 2;
+        }
+        return 1;
     }
 };
 
@@ -153,7 +171,7 @@ public:
         }
         Components::Table(h, d);
         
-        int c = Components::Menu({"Mo tai khoan moi", "Xoa tai khoan", "Khoa/Mo khoa tai khoan"});
+        int c = Components::Menu({"Mo tai khoan moi", "Xoa tai khoan", "Khoa/Mo khoa tai khoan", "Sua ten chu tai khoan"});
         if (c == 1) {
             std::string stk = Components::TextBox("So TK");
             std::string ten = Components::TextBox("Chu TK");
@@ -170,6 +188,11 @@ public:
             int tt = Components::ComboBox("Trang thai", {"Mo khoa", "Khoa"});
             nganHang.KhoaTaiKhoan(stk, (tt == 2)); SyncData();
             Components::Label("Da cap nhat!");
+        } else if (c == 4) {
+            std::string stk = Components::TextBox("Nhap STK can sua");
+            std::string ten = Components::TextBox("Ten moi");
+            if (nganHang.SuaThongTin(stk, ten)) { SyncData(); Components::Label("Da cap nhat!"); }
+            else { Components::Label("Loi: Khong tim thay STK!", true); }
         }
         
         if (c == 0) return 2;
@@ -218,7 +241,7 @@ public:
     int Show() override {
         Components::Header("DICH VU KHACH HANG");
         std::cout << " [ TK ]: " << CURRENT_USER_STK << "\n";
-        int c = Components::Menu({"Xem so du", "Nap tien", "Rut tien", "Chuyen tien", "Sao ke", "KHOA/MO KHOA TK"});
+        int c = Components::Menu({"Xem so du", "Nap tien", "Rut tien", "Chuyen tien", "Sao ke", "KHOA/MO KHOA TK", "Xem lai du kien"});
         try {
             if (c == 1) {
                 auto ds = Data::DataManager::LoadTaiKhoan("featureData/accounts.csv");
@@ -245,6 +268,14 @@ public:
                 int tt = Components::ComboBox("Trang thai moi", {"Mo khoa", "Khoa"});
                 nganHang.KhoaTaiKhoan(CURRENT_USER_STK, (tt == 2)); SyncData();
                 Components::Label("Da cap nhat!");
+            } else if (c == 7) {
+                const auto& ds = nganHang.GetDanhSach();
+                for (auto& tk : ds) {
+                    if (tk->GetSoTaiKhoan() == CURRENT_USER_STK) {
+                        double lai = tk->TinhLai();
+                        Components::Label("Lai du kien: " + std::to_string((long long)lai) + " VND");
+                    }
+                }
             } else if (c == 0) return 1;
         } catch (const std::exception& e) { Components::Label(e.what(), true); }
         system("pause"); return 7;
