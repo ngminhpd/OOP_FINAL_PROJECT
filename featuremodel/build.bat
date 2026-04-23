@@ -1,2 +1,2 @@
-g++ main.cpp Models/TaiKhoan.cpp -o main
+g++ main.cpp TaiKhoan.cpp -o main
 main
