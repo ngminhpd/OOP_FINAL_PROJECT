@@ -15,8 +15,8 @@ Huỳnh Tấn Đạt
 |  23/4/26  |       Thiết kế hệ thống, class, đa hình        |   Khang       | Hoàn thành    | Push    |
 |  23/4/26  |             ...                                |   Minh        | Hoàn thành    | Merge   |
 |  23/4/26  |       File dữ liệu, test, tích hợp             |   Minh        | Hoàn thành    | Push    |
-|           |                                                |               |               |         |
-|           |                                                |               |               |         |
+|  23/4/26  |       Chức năng ngân hàng                      |   Quân        |               |         |
+|  23/4/26  |       Đồng bộ hệ thống, class, đa hình         |   Quân        |               |         |
 |           |                                                |               |               |         |
 |           |                                                |               |               |         |
 |           |                                                |               |               |         |
