@@ -1,6 +1,5 @@
 #include "KhachHang.h"
 #include <sstream>
-#include <vector>
 
 namespace BankManagementSystem {
 namespace Models {
@@ -14,16 +13,16 @@ std::string KhachHang::GetSoDienThoai() const { return SoDienThoai; }
 std::string KhachHang::GetDiaChi() const { return DiaChi; }
 
 std::string KhachHang::ToCSV() const {
-    return MaKH + "," + HoTen + "," + SoDienThoai + "," + DiaChi;
+    return MaKH + ";" + HoTen + ";" + SoDienThoai + ";" + DiaChi;
 }
 
 KhachHang KhachHang::FromCSV(const std::string& line) {
     std::stringstream ss(line);
     std::string ma, ten, sdt, dc;
-    std::getline(ss, ma, ',');
-    std::getline(ss, ten, ',');
-    std::getline(ss, sdt, ',');
-    std::getline(ss, dc, ',');
+    std::getline(ss, ma, ';');
+    std::getline(ss, ten, ';');
+    std::getline(ss, sdt, ';');
+    std::getline(ss, dc, ';');
     return KhachHang(ma, ten, sdt, dc);
 }
 

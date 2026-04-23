@@ -38,12 +38,19 @@ public:
     void RutTien(std::string soTK, double soTien, std::string pin);
     void ChuyenTien(std::string soTK_Nguon, std::string soTK_Dich, double soTien, std::string pin);
 
-    // Chức năng tra cứu
+    // Tra cuu
     void LietKeDanhSach() const;
     void InSaoKe(std::string soTK);
+    void NapLichSu(std::string stk, std::string loai, double tien, std::string nd);
+    
+    // Luu file
+    const std::map<std::string, std::vector<GiaoDich>>& GetLichSu() const { return dsLichSu; }
     
     // Tính lãi
     void TinhLaiVaCapNhat();
+
+    // Getter phục vụ lưu file (Thống nhất logic)
+    const std::vector<std::shared_ptr<Models::TaiKhoan>>& GetDanhSach() const { return danhSachTaiKhoan; }
 
     // File I/O
     void LuuDuLieu(std::string filename);
