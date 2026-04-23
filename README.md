@@ -18,7 +18,7 @@ Huỳnh Tấn Đạt
 |  23/4/26  |       Chức năng ngân hàng                      |   Quân        |               |         |
 |  23/4/26  |       Đồng bộ hệ thống, class, đa hình         |   Quân        |               |         |
 |  23/4/26  |  Thực hiện các logic của UI, các trường hợp    |   Đạt         |               |         |
-|           |                                                |               |               |         |
+|  23/4/26  |       Bổ sung các nội dung UI còn thiếu        |   Đạt         |               |         |
 |           |                                                |               |               |         |
 
 ## Nhiệm vụ
