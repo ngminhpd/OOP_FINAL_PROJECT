@@ -1,0 +1,27 @@
+# Executables
+*.exe
+*.out
+*.app
+
+# Archives
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# Build artifacts
+*.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tempCodeRunnerFile.*
