@@ -134,6 +134,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <button class="nav-btn" onclick="showSection('s-history', this); loadHistory()">📋 Lịch sử</button>
             <button class="nav-btn" onclick="showSection('s-upgrade', this)">✨ Nâng hạng</button>
             <button class="nav-btn" onclick="showSection('s-changepin', this)">🔐 Đổi PIN</button>
+            <button class="nav-btn" style="color:var(--success); margin-top: 1rem; border: 1px dashed var(--success)" onclick="refreshUser(); checkLoanStatus(); showToast('Đã cập nhật dữ liệu mới nhất')">🔄 Làm mới dữ liệu</button>
         </nav>
         <nav id="nav-admin" style="display:none">
             <button class="nav-btn active" onclick="showSection('a-accounts', this)">🗂️ Quản lý TK</button>
@@ -143,16 +144,21 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <button class="nav-btn" onclick="showSection('a-deposit', this)">💰 Nạp tại quầy</button>
             <button class="nav-btn" onclick="showSection('a-add', this)">➕ Mở tài khoản</button>
             <button class="nav-btn" onclick="calcInterest()">📈 Tính lãi</button>
+            <button class="nav-btn" style="color:var(--primary); margin-top: 1rem; border: 1px dashed var(--primary)" onclick="loadAdmin(); loadRequests(); showToast('Đã làm mới dữ liệu hệ thống')">🔄 Làm mới Admin</button>
             <div id="last-interest-time" style="font-size:0.65rem; color:var(--muted); padding:0.5rem">Lần cuối tính lãi: ---</div>
         </nav>
         <button class="btn-logout" onclick="location.reload()">🚪 Đăng xuất</button>
     </aside>
     <main class="content">
         <section id="s-home" class="section">
-            <h1 style="margin-bottom:1rem">Chào mừng <span id="u-rank-badge" class="badge"></span></h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h1>Chào mừng <span id="u-rank-badge" class="badge"></span></h1>
+                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="refreshUser(); checkLoanStatus(); showToast('Đã cập nhật')">🔄 Làm mới</button>
+            </div>
             <div class="balance-card">
                 <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">SỐ DƯ HIỆN TẠI</div>
                 <div id="u-balance" class="balance-amount">0 VND</div>
+                <div id="u-balance-text" style="font-size:0.85rem; color:rgba(255,255,255,0.8); margin-top:0.3rem; font-style:italic"></div>
                 <div id="u-loan-balance-display" style="font-size:0.9rem; color:var(--warning); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:0.5rem; display:none"></div>
                 <div id="u-type" style="font-size:0.8rem; opacity:0.6; margin-top:0.5rem">---</div>
             </div>
@@ -165,7 +171,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="s-transact" class="section" style="display:none">
-            <h1>Thực hiện giao dịch</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h1>Thực hiện giao dịch</h1>
+                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="refreshUser(); showToast('Đã cập nhật số dư')">🔄 Làm mới</button>
+            </div>
             <div class="login-card" style="max-width:500px; margin-top:1.5rem">
                 <div class="input-group"><label>Loại giao dịch</label><select id="t-type" onchange="toggleDest()"><option value="nap">Nạp tiền vào tài khoản</option><option value="rut">Rút tiền mặt</option><option value="chuyen">Chuyển khoản</option></select></div>
                 <div class="input-group" id="t-dest-group" style="display:none"><label>Số tài khoản nhận</label><input type="text" id="t-dest" placeholder="VD: 002"></div>
@@ -176,7 +185,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="s-loan" class="section" style="display:none">
-            <h1>Vay tiền & Đồng hồ đếm ngược</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h1>Vay tiền & Đồng hồ đếm ngược</h1>
+                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="refreshUser(); checkLoanStatus(); showToast('Đã cập nhật trạng thái vay')">🔄 Làm mới</button>
+            </div>
             
             <div id="active-loan-area" style="display:none; margin-top:1.5rem">
                 <div class="balance-card" style="background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%); border-color: #f87171">
@@ -226,7 +238,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="s-history" class="section" style="display:none">
-            <h1>Lịch sử giao dịch</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h1>Lịch sử giao dịch</h1>
+                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="loadHistory(); showToast('Đã cập nhật lịch sử')">🔄 Làm mới</button>
+            </div>
             <div id="history-list" style="margin-top:1.5rem"></div>
         </section>
 
@@ -240,7 +255,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="a-accounts" class="section" style="display:none">
-            <h1>Quản lý tất cả tài khoản</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h1>Quản lý tất cả tài khoản</h1>
+                <button class="btn-xs btn-primary" style="padding: 0.5rem 1rem; color: #0b1120" onclick="loadAdmin(); showToast('Đã cập nhật danh sách')">🔄 Làm mới</button>
+            </div>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
                     <thead><tr><th>Loại TK</th><th>Số TK</th><th>Họ tên</th><th>Số dư</th><th>Hạng</th><th>Thao tác</th></tr></thead>
@@ -250,7 +268,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="a-requests" class="section" style="display:none">
-            <h1>Yêu cầu chờ duyệt</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h1>Yêu cầu chờ duyệt</h1>
+                <button class="btn-xs btn-primary" style="padding: 0.5rem 1rem; color: #0b1120" onclick="loadRequests(); showToast('Đã cập nhật yêu cầu')">🔄 Làm mới</button>
+            </div>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
                     <thead><tr><th>Loại</th><th>Số TK</th><th>Họ tên</th><th>Nội dung</th><th>Thời gian</th><th>Thao tác</th></tr></thead>
@@ -260,7 +281,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="a-loans" class="section" style="display:none">
-            <h1>Quản lý các khoản vay hiện có</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h1>Quản lý các khoản vay hiện có</h1>
+                <button class="btn-xs btn-primary" style="padding: 0.5rem 1rem; color: #0b1120" onclick="loadAdminLoans(); showToast('Đã cập nhật khoản vay')">🔄 Làm mới</button>
+            </div>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
                     <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Gốc</th><th>Lãi suất</th><th>Thời gian còn lại</th></tr></thead>
