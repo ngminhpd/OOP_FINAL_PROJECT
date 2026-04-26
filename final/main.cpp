@@ -258,9 +258,19 @@ public:
         dsLichSuVay.emplace_back(stk, ten, string(buf), to_string(phut) + " phút", amt, ls, "Chưa trả");
         Save();
     }
-    void XoaVay(string stk) {
-        dsVay.erase(remove_if(dsVay.begin(), dsVay.end(), [&](const KhoanVay& v){ return v.stk == stk; }), dsVay.end());
-        for(auto& l : dsLichSuVay) if(l.stk == stk && l.trangThai == "Chưa trả") { l.trangThai = "Đã trả"; break; }
+    void XoaVay(string stk, long long hanTra) {
+        for(auto it = dsVay.begin(); it != dsVay.end(); ++it) {
+            if(it->stk == stk && it->hanTra == hanTra) {
+                dsVay.erase(it);
+                break;
+            }
+        }
+        for(auto& l : dsLichSuVay) {
+            if(l.stk == stk && l.trangThai == "Chưa trả") {
+                l.trangThai = "Đã trả";
+                break;
+            }
+        }
         Save();
     }
     const vector<shared_ptr<TaiKhoan>>& GetDS() { return dsTK; }
@@ -406,22 +416,35 @@ int main() {
         auto tk = nh.Tim(stk);
         if(!tk || tk->GetMaPIN() != pin) { res.set_content("{\"status\":\"error\",\"msg\":\"Sai mã PIN hoặc không tìm thấy TK\"}", "application/json"); return; }
         
+        long long now = (long long)time(0);
+        const KhoanVay* selected = nullptr;
+        
+        // Tìm khoản vay ưu tiên (giống loan_info)
         for(auto& v : nh.GetDSVay()) {
             if(v.stk == stk) {
-                double totalDue = v.soTien * (1.0 + v.laiSuat);
-                if(tk->GetSoDu() < totalDue) {
-                    res.set_content("{\"status\":\"error\",\"msg\":\"Số dư không đủ để trả nợ (Cần " + to_string((long long)totalDue) + " VND)\"}", "application/json");
-                    return;
+                if(v.hanTra > now) {
+                    selected = &v;
+                    break;
                 }
-                tk->SetSoDu(tk->GetSoDu() - totalDue);
-                nh.GhiLog(stk, "TRA_NO", -totalDue, "Tất toán khoản vay bao gồm lãi");
-                nh.XoaVay(stk);
-                nh.Save();
-                res.set_content("{\"status\":\"success\"}", "application/json");
-                return;
+                if(!selected) selected = &v;
             }
         }
-        res.set_content("{\"status\":\"error\",\"msg\":\"Không có khoản vay nào\"}", "application/json");
+
+        if(selected) {
+            double totalDue = selected->soTien * (1.0 + selected->laiSuat);
+            if(tk->GetSoDu() < totalDue) {
+                res.set_content("{\"status\":\"error\",\"msg\":\"Số dư không đủ để trả nợ (Cần " + to_string((long long)totalDue) + " VND)\"}", "application/json");
+                return;
+            }
+            long long ht = selected->hanTra; // Lưu lại hạn trả để xóa đúng
+            tk->SetSoDu(tk->GetSoDu() - totalDue);
+            nh.GhiLog(stk, "TRA_NO", -totalDue, "Tất toán khoản vay bao gồm lãi");
+            nh.XoaVay(stk, ht);
+            nh.Save();
+            res.set_content("{\"status\":\"success\"}", "application/json");
+        } else {
+            res.set_content("{\"status\":\"error\",\"msg\":\"Không có khoản vay nào\"}", "application/json");
+        }
     });
 
     handle("/api/user/request_reset_pin", [&](const httplib::Request& req, httplib::Response& res) {
