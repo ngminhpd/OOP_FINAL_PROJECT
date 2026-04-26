@@ -1,11 +1,8 @@
 # Đồ án cuối kỳ Thực hành OOP
 ## Thành viên
 Nguyễn Hồng Minh
-
 Nguyễn Hoàng Khang
-
 Nguyễn Minh Quân
-
 Huỳnh Tấn Đạt
 
 ## Lịch sử commit
@@ -15,10 +12,10 @@ Huỳnh Tấn Đạt
 |  23/4/26  |       Thiết kế hệ thống, class, đa hình        |   Khang       | Hoàn thành    | Push    |
 |  23/4/26  |             ...                                |   Minh        | Hoàn thành    | Merge   |
 |  23/4/26  |       File dữ liệu, test, tích hợp             |   Minh        | Hoàn thành    | Push    |
-|  23/4/26  |       Chức năng ngân hàng                      |   Quân        |               |         |
-|  23/4/26  |       Đồng bộ hệ thống, class, đa hình         |   Quân        |               |         |
-|  23/4/26  |  Thực hiện các logic của UI, các trường hợp    |   Đạt         |               |         |
-|  23/4/26  |       Bổ sung các nội dung UI còn thiếu        |   Đạt         |               |         |
+|  23/4/26  |       Chức năng ngân hàng                      |   Quân        | Hoàn thành    | Push    |
+|  23/4/26  |       Đồng bộ hệ thống, class, đa hình         |   Quân        | Hoàn thành    | Push    |
+|  23/4/26  |  Thực hiện các logic của UI, các trường hợp    |   Đạt         | Hoàn thành    | Push    |
+|  23/4/26  |       Bổ sung các nội dung UI còn thiếu        |   Đạt         | Hoàn thành    | Push    |
 |  24/4/26  |       Lên ý tưởng thiết kế giao diện           |   Tất cả      | Hoàn thành    | Họp     |
 |  25/4/26  |       Commit và Push lên nhánh main            |   Minh        | Hoàn thành    | Push    |
 |  25/4/26  | Sửa chức năng đổi mã pin, hiện chữ cho số tiền |   Quân/Minh   | Hoàn thành    | Push    |
