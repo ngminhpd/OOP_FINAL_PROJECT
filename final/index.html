@@ -153,6 +153,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <div class="balance-card">
                 <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">SỐ DƯ HIỆN TẠI</div>
                 <div id="u-balance" class="balance-amount">0 VND</div>
+                <div id="u-loan-balance-display" style="font-size:0.9rem; color:var(--warning); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:0.5rem; display:none"></div>
                 <div id="u-type" style="font-size:0.8rem; opacity:0.6; margin-top:0.5rem">---</div>
             </div>
             <div class="info-grid">
@@ -441,6 +442,16 @@ async function doResetPinRequest(){
 async function refreshUser(){
     const d=await api('/api/user/info?stk='+session.stk);
     document.getElementById('u-balance').textContent=Number(d.balance).toLocaleString()+' VND';
+    
+    // Cập nhật số dư tiền vay
+    const loanEl = document.getElementById('u-loan-balance-display');
+    if(d.loanBalance > 0) {
+        loanEl.style.display = 'block';
+        loanEl.textContent = '(Tiền vay khả dụng: ' + Number(d.loanBalance).toLocaleString() + ' VND)';
+    } else {
+        loanEl.style.display = 'none';
+    }
+
     document.getElementById('u-name').textContent=d.name;
     document.getElementById('u-type').textContent=d.type;
     document.getElementById('u-interest').textContent=Number(d.interest).toLocaleString()+' VND';
