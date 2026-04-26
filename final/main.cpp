@@ -61,13 +61,31 @@ struct LichSuVay {
 class TaiKhoan {
 protected:
     string SoTaiKhoan, TenKhachHang, MaPIN, Hang;
-    double SoDu; bool DaKhoa;
+    double SoDu, SoDuVay; bool DaKhoa;
 public:
-    TaiKhoan(string stk, string ten, double du, string pin = "1234", bool khoa = false, string hang = "Thành viên")
-        : SoTaiKhoan(stk), TenKhachHang(ten), SoDu(du), MaPIN(pin), DaKhoa(khoa), Hang(hang) {}
+    TaiKhoan(string stk, string ten, double du, string pin = "1234", bool khoa = false, string hang = "Thành viên", double duVay = 0)
+        : SoTaiKhoan(stk), TenKhachHang(ten), SoDu(du), SoDuVay(duVay), MaPIN(pin), DaKhoa(khoa), Hang(hang) {}
     virtual ~TaiKhoan() {}
     virtual void NapTien(double amt) { if (amt > 0) SoDu += amt; }
+    void NapTienVay(double amt) { if (amt > 0) SoDuVay += amt; }
+    
     virtual bool RutTien(double amt) = 0;
+    
+    // Logic rút tiền dùng chung cho các loại tài khoản để tách biệt 2 nguồn tiền
+    bool ThucHienRut(double amt, double minBalance = 0) {
+        if(DaKhoa || amt <= 0) return false;
+        if(SoDu + SoDuVay - amt < minBalance) return false;
+        
+        if(SoDu >= amt) {
+            SoDu -= amt;
+        } else {
+            double rem = amt - SoDu;
+            SoDu = 0;
+            SoDuVay -= rem;
+        }
+        return true;
+    }
+
     virtual double TinhLai() = 0;
     string GetSoTaiKhoan() const { return SoTaiKhoan; }
     string GetTenKhachHang() const { return TenKhachHang; }
@@ -75,7 +93,9 @@ public:
     bool IsLocked() const { return DaKhoa; }
     void SetLocked(bool s) { DaKhoa = s; }
     double GetSoDu() const { return SoDu; }
+    double GetSoDuVay() const { return SoDuVay; }
     void SetSoDu(double d) { SoDu = d; }
+    void SetSoDuVay(double d) { SoDuVay = d; }
     void SetTenKhachHang(string t) { TenKhachHang = t; }
     void SetMaPIN(string p) { MaPIN = p; }
     string GetHang() const { return Hang; }
@@ -84,16 +104,16 @@ public:
 
 class TaiKhoanThanhToan : public TaiKhoan {
 public:
-    TaiKhoanThanhToan(string a, string b, double c, string p="1234", bool k=false, string h="Thành viên") : TaiKhoan(a,b,c,p,k,h) {}
-    bool RutTien(double s) override { if(!DaKhoa && s>0 && SoDu-s>=50000){ SoDu-=s; return true;} return false; }
+    TaiKhoanThanhToan(string a, string b, double c, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv) {}
+    bool RutTien(double s) override { return ThucHienRut(s, 50000); }
     double TinhLai() override { return SoDu * 0.001; }
 };
 
 class TaiKhoanTietKiem : public TaiKhoan {
     double LaiSuat; int KyHan;
 public:
-    TaiKhoanTietKiem(string a, string b, double c, double ls, int kh, string p="1234", bool k=false, string h="Thành viên") : TaiKhoan(a,b,c,p,k,h), LaiSuat(ls), KyHan(kh) {}
-    bool RutTien(double s) override { if(!DaKhoa && s==SoDu){ SoDu=0; return true;} return false; }
+    TaiKhoanTietKiem(string a, string b, double c, double ls, int kh, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv), LaiSuat(ls), KyHan(kh) {}
+    bool RutTien(double s) override { if(!DaKhoa && s==SoDu + SoDuVay){ SoDu=0; SoDuVay=0; return true;} return false; }
     double TinhLai() override { return SoDu * LaiSuat; }
     double GetLaiSuat() const { return LaiSuat; }
     int GetKyHan() const { return KyHan; }
@@ -102,8 +122,8 @@ public:
 class TaiKhoanTinDung : public TaiKhoan {
     double HanMuc;
 public:
-    TaiKhoanTinDung(string a, string b, double c, double hm, string p="1234", bool k=false, string h="Thành viên") : TaiKhoan(a,b,c,p,k,h), HanMuc(hm) {}
-    bool RutTien(double s) override { if(!DaKhoa && s>0 && SoDu+s<=HanMuc){ SoDu+=s; return true;} return false; }
+    TaiKhoanTinDung(string a, string b, double c, double hm, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv), HanMuc(hm) {}
+    bool RutTien(double s) override { if(!DaKhoa && s>0 && SoDu+SoDuVay+s<=HanMuc){ SoDu+=s; return true;} return false; }
     double TinhLai() override { return SoDu > 0 ? SoDu * 0.2 : 0; }
     double GetHanMuc() const { return HanMuc; }
 };
@@ -146,17 +166,20 @@ public:
             string l;
             while(getline(f, l)) {
                 if(l.empty()) continue;
-                stringstream ss(l); string type, stk, ten, pin, du_s, khoa_s, extra1, extra2, hang;
+                stringstream ss(l); string type, stk, ten, pin, du_s, khoa_s, extra1, extra2, hang, duVay_s;
                 getline(ss,type,';'); getline(ss,stk,';'); getline(ss,ten,';'); getline(ss,pin,';'); getline(ss,du_s,';'); getline(ss,khoa_s,';');
                 try {
                     double du = stod(du_s); bool khoa = (khoa_s=="1");
-                    if(type=="ThanhToan") { getline(ss, hang, ';'); if(hang.empty()) hang="Thành viên"; dsTK.push_back(make_shared<TaiKhoanThanhToan>(stk, ten, du, pin, khoa, hang)); }
+                    if(type=="ThanhToan") { 
+                        getline(ss, hang, ';'); getline(ss, duVay_s, ';');
+                        dsTK.push_back(make_shared<TaiKhoanThanhToan>(stk, ten, du, pin, khoa, hang, duVay_s.empty() ? 0 : stod(duVay_s))); 
+                    }
                     else if(type=="TietKiem") {
-                        getline(ss,extra1,';'); getline(ss,extra2,';'); getline(ss, hang, ';'); if(hang.empty()) hang="Thành viên";
-                        dsTK.push_back(make_shared<TaiKhoanTietKiem>(stk, ten, du, stod(extra1), stoi(extra2), pin, khoa, hang));
+                        getline(ss,extra1,';'); getline(ss,extra2,';'); getline(ss, hang, ';'); getline(ss, duVay_s, ';');
+                        dsTK.push_back(make_shared<TaiKhoanTietKiem>(stk, ten, du, stod(extra1), stoi(extra2), pin, khoa, hang, duVay_s.empty() ? 0 : stod(duVay_s)));
                     } else if(type=="TinDung") {
-                        getline(ss,extra1,';'); getline(ss, hang, ';'); if(hang.empty()) hang="Thành viên";
-                        dsTK.push_back(make_shared<TaiKhoanTinDung>(stk, ten, du, stod(extra1), pin, khoa, hang));
+                        getline(ss,extra1,';'); getline(ss, hang, ';'); getline(ss, duVay_s, ';');
+                        dsTK.push_back(make_shared<TaiKhoanTinDung>(stk, ten, du, stod(extra1), pin, khoa, hang, duVay_s.empty() ? 0 : stod(duVay_s)));
                     }
                 } catch(...) {}
             }
@@ -224,7 +247,7 @@ public:
             string type = "ThanhToan", extra = "";
             if(auto* s = dynamic_cast<TaiKhoanTietKiem*>(tk.get())) { type="TietKiem"; extra=";"+to_string(s->GetLaiSuat())+";"+to_string(s->GetKyHan()); }
             else if(auto* d = dynamic_cast<TaiKhoanTinDung*>(tk.get())) { type="TinDung"; extra=";"+to_string((long long)d->GetHanMuc()); }
-            f << type << ";" << tk->GetSoTaiKhoan() << ";" << tk->GetTenKhachHang() << ";" << tk->GetMaPIN() << ";" << (long long)tk->GetSoDu() << ";" << (tk->IsLocked()?"1":"0") << extra << ";" << tk->GetHang() << "\n";
+            f << type << ";" << tk->GetSoTaiKhoan() << ";" << tk->GetTenKhachHang() << ";" << tk->GetMaPIN() << ";" << (long long)tk->GetSoDu() << ";" << (tk->IsLocked()?"1":"0") << extra << ";" << tk->GetHang() << ";" << (long long)tk->GetSoDuVay() << "\n";
         }
         f.close();
         ofstream f2("data/history.csv", ios::trunc);
@@ -253,9 +276,12 @@ public:
         dsVay.emplace_back(stk, amt, (long long)now + phut * 60, ls);
         
         auto tk = Tim(stk);
-        string ten = tk ? tk->GetTenKhachHang() : "N/A";
-        char buf[80]; tm* ltm = localtime(&now); strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ltm);
-        dsLichSuVay.emplace_back(stk, ten, string(buf), to_string(phut) + " phút", amt, ls, "Chưa trả");
+        if(tk) {
+            tk->NapTienVay(amt); // Cộng tiền vào nguồn tiền vay
+            string ten = tk->GetTenKhachHang();
+            char buf[80]; tm* ltm = localtime(&now); strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ltm);
+            dsLichSuVay.emplace_back(stk, ten, string(buf), to_string(phut) + " phút", amt, ls, "Chưa trả");
+        }
         Save();
     }
     void XoaVay(string stk, long long hanTra) {
@@ -328,7 +354,7 @@ int main() {
         string type = "Thanh Toán"; double hm = 0;
         if(dynamic_cast<TaiKhoanTietKiem*>(tk.get())) type="Tiết Kiệm";
         else if(auto* d = dynamic_cast<TaiKhoanTinDung*>(tk.get())) { type="Tín Dụng"; hm=d->GetHanMuc(); }
-        res.set_content("{\"balance\":"+to_string((long long)tk->GetSoDu())+",\"name\":\""+tk->GetTenKhachHang()+"\",\"type\":\""+type+"\",\"interest\":"+to_string((long long)tk->TinhLai())+",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\",\"hanMuc\":"+to_string((long long)hm)+"}", "application/json");
+        res.set_content("{\"balance\":"+to_string((long long)tk->GetSoDu())+",\"loanBalance\":"+to_string((long long)tk->GetSoDuVay())+",\"name\":\""+tk->GetTenKhachHang()+"\",\"type\":\""+type+"\",\"interest\":"+to_string((long long)tk->TinhLai())+",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\",\"hanMuc\":"+to_string((long long)hm)+"}", "application/json");
     });
 
     handle("/api/user/history", [&](const httplib::Request& req, httplib::Response& res) {
