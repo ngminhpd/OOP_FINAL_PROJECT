@@ -498,18 +498,25 @@ async function checkLoanStatus(){
     const info = document.getElementById('loan-info-text');
     const totalDue = document.getElementById('loan-total-due');
 
-    if(res.status === 'active' && res.remaining > 0){
+    if(res.status === 'active'){
         area.style.display = 'block';
         info.textContent = `Gốc: ${Number(res.amount).toLocaleString()} VND (Lãi: ${(res.interestRate*100).toFixed(1)}%)`;
         totalDue.textContent = `Tổng nợ cần trả: ${Number(res.totalDue).toLocaleString()} VND`;
         
         if(loanInterval) clearInterval(loanInterval);
-        let timeLeft = res.remaining;
         
+        if(res.remaining <= 0) {
+            timer.textContent = "HẾT HẠN / QUÁ HẠN";
+            timer.style.color = "#f87171";
+            return;
+        }
+
+        let timeLeft = res.remaining;
+        timer.style.color = "#fecaca";
         const updateTimer = () => {
             if(timeLeft <= 0) {
                 timer.textContent = "HẾT HẠN";
-                timer.style.color = "red";
+                timer.style.color = "#f87171";
                 clearInterval(loanInterval);
                 return;
             }
