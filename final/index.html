@@ -466,6 +466,7 @@ async function doResetPinRequest(){
 async function refreshUser(){
     const d=await api('/api/user/info?stk='+session.stk);
     document.getElementById('u-balance').textContent=Number(d.balance).toLocaleString()+' VND';
+    document.getElementById('u-balance-text').textContent = '(' + docSoThanhChu(d.balance) + ')';
     
     // Cập nhật số dư tiền vay
     const loanEl = document.getElementById('u-loan-balance-display');
