@@ -138,7 +138,8 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         <nav id="nav-admin" style="display:none">
             <button class="nav-btn active" onclick="showSection('a-accounts', this)">🗂️ Quản lý TK</button>
             <button class="nav-btn" onclick="showSection('a-requests', this)">📩 Yêu cầu chờ duyệt</button>
-            <button class="nav-btn" onclick="showSection('a-loans', this); loadAdminLoans()">🏦 Quản lý vay</button>
+            <button class="nav-btn" onclick="showSection('a-loans', this); loadAdminLoans()">🏦 Khoản vay hiện tại</button>
+            <button class="nav-btn" onclick="showSection('a-loan-history', this); loadLoanHistory()">📜 Lịch sử vay vốn</button>
             <button class="nav-btn" onclick="showSection('a-deposit', this)">💰 Nạp tại quầy</button>
             <button class="nav-btn" onclick="showSection('a-add', this)">➕ Mở tài khoản</button>
             <button class="nav-btn" onclick="calcInterest()">📈 Tính lãi</button>
@@ -263,6 +264,16 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
                 <table>
                     <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Gốc</th><th>Lãi suất</th><th>Thời gian còn lại</th></tr></thead>
                     <tbody id="admin-loan-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="a-loan-history" class="section" style="display:none">
+            <h1>Toàn bộ lịch sử vay vốn</h1>
+            <div class="table-wrapper" style="margin-top:1.5rem">
+                <table>
+                    <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Số tiền</th><th>Lãi suất</th><th>Thời hạn</th><th>Ngày vay</th><th>Kết quả</th></tr></thead>
+                    <tbody id="loan-history-tbody"></tbody>
                 </table>
             </div>
         </section>
@@ -572,6 +583,21 @@ async function loadAdminLoans(){
             if(el) el.innerHTML = formatTimer(v.remaining);
         });
     }, 1000);
+}
+
+async function loadLoanHistory(){
+    const data = await api('/api/admin/loan_history');
+    document.getElementById('loan-history-tbody').innerHTML = data.map(l => `
+        <tr>
+            <td>${l.stk}</td>
+            <td>${l.name}</td>
+            <td>${Number(l.amount).toLocaleString()} VND</td>
+            <td>${(l.rate*100).toFixed(1)}%</td>
+            <td>${l.han}</td>
+            <td>${l.time}</td>
+            <td><span class="badge ${l.status==='Đã trả'?'badge-TietKiem':'badge-TinDung'}">${l.status}</span></td>
+        </tr>
+    `).reverse().join('') || '<tr><td colspan="7" style="text-align:center">Chưa có dữ liệu</td></tr>';
 }
 
 function openUpgradeModal(stk){ document.getElementById('up-stk').value = stk; document.getElementById('upgrade-modal').style.display = 'flex'; }

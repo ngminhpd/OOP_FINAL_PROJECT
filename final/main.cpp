@@ -51,6 +51,13 @@ struct KhoanVay {
     KhoanVay(string s, double st, long long ht, double ls = 0.05) : stk(s), soTien(st), hanTra(ht), laiSuat(ls) {}
 };
 
+struct LichSuVay {
+    string stk, ten, thoiGian, hanVay, trangThai;
+    double soTien, laiSuat;
+    LichSuVay(string s, string t, string tg, string hv, double st, double ls, string tt)
+        : stk(s), ten(t), thoiGian(tg), hanVay(hv), soTien(st), laiSuat(ls), trangThai(tt) {}
+};
+
 class TaiKhoan {
 protected:
     string SoTaiKhoan, TenKhachHang, MaPIN, Hang;
@@ -109,6 +116,7 @@ class NganHang {
     map<string, vector<GiaoDich>> dsLS;
     vector<YeuCau> dsYeuCau;
     vector<KhoanVay> dsVay;
+    vector<LichSuVay> dsLichSuVay;
     string thoiGianTinhLai = "Chưa có dữ liệu";
 public:
     shared_ptr<TaiKhoan> Tim(string stk) {
@@ -132,7 +140,7 @@ public:
     }
 
     void Load() {
-        dsTK.clear(); dsLS.clear(); dsYeuCau.clear(); dsVay.clear();
+        dsTK.clear(); dsLS.clear(); dsYeuCau.clear(); dsVay.clear(); dsLichSuVay.clear();
         ifstream f("data/accounts.csv"); 
         if(f) {
             string l;
@@ -187,6 +195,17 @@ public:
             }
             f4.close();
         }
+        ifstream f5("data/loan_history.csv");
+        if(f5) {
+            string l;
+            while(getline(f5, l)) {
+                if(l.empty()) continue;
+                stringstream ss(l); string stk, ten, tg, hv, st, ls, tt;
+                getline(ss,stk,';'); getline(ss,ten,';'); getline(ss,tg,';'); getline(ss,hv,';'); getline(ss,st,';'); getline(ss,ls,';'); getline(ss,tt,';');
+                try { dsLichSuVay.emplace_back(stk, ten, tg, hv, stod(st), stod(ls), tt); } catch(...) {}
+            }
+            f5.close();
+        }
         ifstream fs("data/system.csv");
         if(fs) { getline(fs, thoiGianTinhLai); fs.close(); }
         
@@ -217,6 +236,9 @@ public:
         ofstream f4("data/loans.csv", ios::trunc);
         for(auto& v : dsVay) f4 << v.stk << ";" << (long long)v.soTien << ";" << v.hanTra << ";" << v.laiSuat << "\n";
         f4.close();
+        ofstream f5("data/loan_history.csv", ios::trunc);
+        for(auto& l : dsLichSuVay) f5 << l.stk << ";" << l.ten << ";" << l.thoiGian << ";" << l.hanVay << ";" << (long long)l.soTien << ";" << l.laiSuat << ";" << l.trangThai << "\n";
+        f5.close();
         ofstream fs("data/system.csv", ios::trunc); fs << thoiGianTinhLai; fs.close();
     }
 
@@ -229,16 +251,23 @@ public:
     void AddVay(string stk, double amt, int phut, double ls = 0.05) {
         time_t now = time(0);
         dsVay.emplace_back(stk, amt, (long long)now + phut * 60, ls);
+        
+        auto tk = Tim(stk);
+        string ten = tk ? tk->GetTenKhachHang() : "N/A";
+        char buf[80]; tm* ltm = localtime(&now); strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ltm);
+        dsLichSuVay.emplace_back(stk, ten, string(buf), to_string(phut) + " phút", amt, ls, "Chưa trả");
         Save();
     }
     void XoaVay(string stk) {
         dsVay.erase(remove_if(dsVay.begin(), dsVay.end(), [&](const KhoanVay& v){ return v.stk == stk; }), dsVay.end());
+        for(auto& l : dsLichSuVay) if(l.stk == stk && l.trangThai == "Chưa trả") { l.trangThai = "Đã trả"; break; }
         Save();
     }
     const vector<shared_ptr<TaiKhoan>>& GetDS() { return dsTK; }
     const map<string, vector<GiaoDich>>& GetLS() { return dsLS; }
     const vector<YeuCau>& GetYeuCau() { return dsYeuCau; }
     const vector<KhoanVay>& GetDSVay() { return dsVay; }
+    const vector<LichSuVay>& GetLichSuVay() { return dsLichSuVay; }
 };
 
 // ============================================================
@@ -415,6 +444,15 @@ int main() {
             auto tk = nh.Tim(v.stk);
             string ten = tk ? tk->GetTenKhachHang() : "N/A";
             j += "{\"stk\":\""+v.stk+"\",\"name\":\""+ten+"\",\"amount\":"+to_string((long long)v.soTien)+",\"interestRate\":"+to_string(v.laiSuat)+",\"remaining\":"+to_string(v.hanTra - now)+"}";
+        }
+        j+="]"; res.set_content(j, "application/json");
+    });
+
+    handle("/api/admin/loan_history", [&](const httplib::Request&, httplib::Response& res) {
+        string j = "["; bool f = true;
+        for(auto& l : nh.GetLichSuVay()) {
+            if(!f) j+=","; f=false;
+            j += "{\"stk\":\""+l.stk+"\",\"name\":\""+l.ten+"\",\"time\":\""+l.thoiGian+"\",\"han\":\""+l.hanVay+"\",\"amount\":"+to_string((long long)l.soTien)+",\"rate\":"+to_string(l.laiSuat)+",\"status\":\""+l.trangThai+"\"}";
         }
         j+="]"; res.set_content(j, "application/json");
     });
