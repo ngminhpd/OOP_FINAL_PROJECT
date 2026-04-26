@@ -378,13 +378,25 @@ int main() {
 
     handle("/api/user/loan_info", [&](const httplib::Request& req, httplib::Response& res) {
         string stk = param(req, "stk");
+        long long now = (long long)time(0);
+        const KhoanVay* selected = nullptr;
+        
+        // Tìm khoản vay chưa hết hạn trước
         for(auto& v : nh.GetDSVay()) {
             if(v.stk == stk) {
-                long long remaining = v.hanTra - (long long)time(0);
-                double totalDue = v.soTien * (1.0 + v.laiSuat);
-                res.set_content("{\"status\":\"active\",\"amount\":"+to_string((long long)v.soTien)+",\"interestRate\":"+to_string(v.laiSuat)+",\"totalDue\":"+to_string((long long)totalDue)+",\"remaining\":"+to_string(remaining)+"}", "application/json");
-                return;
+                if(v.hanTra > now) {
+                    selected = &v;
+                    break;
+                }
+                if(!selected) selected = &v; // Nếu chưa có cái nào, lấy cái hết hạn đầu tiên
             }
+        }
+
+        if(selected) {
+            long long remaining = selected->hanTra - now;
+            double totalDue = selected->soTien * (1.0 + selected->laiSuat);
+            res.set_content("{\"status\":\"active\",\"amount\":"+to_string((long long)selected->soTien)+",\"interestRate\":"+to_string(selected->laiSuat)+",\"totalDue\":"+to_string((long long)totalDue)+",\"remaining\":"+to_string(remaining)+"}", "application/json");
+            return;
         }
         res.set_content("{\"status\":\"none\"}", "application/json");
     });
