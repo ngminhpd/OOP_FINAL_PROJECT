@@ -181,6 +181,12 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
                     <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">KHOẢN VAY ĐANG HOẠT ĐỘNG</div>
                     <div id="loan-timer" class="balance-amount" style="color:#fecaca">00:00:00</div>
                     <div id="loan-info-text" style="font-size:0.8rem; opacity:0.8; margin-top:0.5rem">Đang nợ: 0 VND</div>
+                    <div id="loan-total-due" style="font-size:0.9rem; font-weight:600; color:var(--warning); margin-top:0.3rem">Tổng nợ (gồm lãi): 0 VND</div>
+                    
+                    <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1)">
+                        <div class="input-group"><label style="color:rgba(255,255,255,0.6)">Xác nhận mã PIN để trả nợ</label><input type="password" id="repay-pin" style="background:rgba(0,0,0,0.2); border-color:rgba(255,255,255,0.2)"></div>
+                        <button class="btn-primary" style="background:var(--success); color:white" onclick="doRepayLoan()">Tất toán khoản vay ngay</button>
+                    </div>
                 </div>
             </div>
 
@@ -255,7 +261,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <h1>Quản lý các khoản vay hiện có</h1>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
-                    <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Số tiền vay</th><th>Thời gian còn lại</th></tr></thead>
+                    <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Gốc</th><th>Lãi suất</th><th>Thời gian còn lại</th></tr></thead>
                     <tbody id="admin-loan-tbody"></tbody>
                 </table>
             </div>
@@ -448,16 +454,32 @@ async function doRequestLoan(){
     else showToast('Gửi yêu cầu thất bại', true);
 }
 
+async function doRepayLoan(){
+    const p = document.getElementById('repay-pin').value;
+    if(!p) { showToast('Vui lòng nhập mã PIN', true); return; }
+    if(!confirm('Bạn có chắc chắn muốn trả nợ và tất toán khoản vay này?')) return;
+    
+    const res = await api('/api/user/repay_loan', {stk:session.stk, pin:p});
+    if(res.status === 'success') {
+        showToast('Đã tất toán khoản vay thành công');
+        document.getElementById('repay-pin').value = '';
+        refreshUser();
+        checkLoanStatus();
+    } else showToast(res.msg, true);
+}
+
 async function checkLoanStatus(){
     if(!session.stk || session.role === 'admin') return;
     const res = await api('/api/user/loan_info?stk='+session.stk);
     const area = document.getElementById('active-loan-area');
     const timer = document.getElementById('loan-timer');
     const info = document.getElementById('loan-info-text');
+    const totalDue = document.getElementById('loan-total-due');
 
     if(res.status === 'active' && res.remaining > 0){
         area.style.display = 'block';
-        info.textContent = `Đang nợ: ${Number(res.amount).toLocaleString()} VND`;
+        info.textContent = `Gốc: ${Number(res.amount).toLocaleString()} VND (Lãi: ${(res.interestRate*100).toFixed(1)}%)`;
+        totalDue.textContent = `Tổng nợ cần trả: ${Number(res.totalDue).toLocaleString()} VND`;
         
         if(loanInterval) clearInterval(loanInterval);
         let timeLeft = res.remaining;
@@ -536,9 +558,10 @@ async function loadAdminLoans(){
         tbody.innerHTML = data.map(v => `
             <tr>
                 <td>${v.stk}</td><td>${v.name}</td><td>${Number(v.amount).toLocaleString()} VND</td>
+                <td>${v.interestRate ? (v.interestRate*100).toFixed(1) : '5.0'}%</td>
                 <td id="admin-loan-timer-${v.stk}">${formatTimer(v.remaining)}</td>
             </tr>
-        `).join('') || '<tr><td colspan="4" style="text-align:center">Không có khoản vay nào</td></tr>';
+        `).join('') || '<tr><td colspan="5" style="text-align:center">Không có khoản vay nào</td></tr>';
     };
     render();
     

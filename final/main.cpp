@@ -47,8 +47,8 @@ struct YeuCau {
 };
 
 struct KhoanVay {
-    string stk; double soTien; long long hanTra; // Unix timestamp
-    KhoanVay(string s, double st, long long ht) : stk(s), soTien(st), hanTra(ht) {}
+    string stk; double soTien; long long hanTra; double laiSuat;
+    KhoanVay(string s, double st, long long ht, double ls = 0.05) : stk(s), soTien(st), hanTra(ht), laiSuat(ls) {}
 };
 
 class TaiKhoan {
@@ -68,6 +68,7 @@ public:
     bool IsLocked() const { return DaKhoa; }
     void SetLocked(bool s) { DaKhoa = s; }
     double GetSoDu() const { return SoDu; }
+    void SetSoDu(double d) { SoDu = d; }
     void SetTenKhachHang(string t) { TenKhachHang = t; }
     void SetMaPIN(string p) { MaPIN = p; }
     string GetHang() const { return Hang; }
@@ -180,9 +181,9 @@ public:
             string l;
             while(getline(f4, l)) {
                 if(l.empty()) continue;
-                stringstream ss(l); string stk, amt, han;
-                getline(ss,stk,';'); getline(ss,amt,';'); getline(ss,han,';');
-                try { dsVay.emplace_back(stk, stod(amt), stoll(han)); } catch(...) {}
+                stringstream ss(l); string stk, amt, han, ls;
+                getline(ss,stk,';'); getline(ss,amt,';'); getline(ss,han,';'); getline(ss,ls,';');
+                try { dsVay.emplace_back(stk, stod(amt), stoll(han), ls.empty() ? 0.05 : stod(ls)); } catch(...) {}
             }
             f4.close();
         }
@@ -214,7 +215,7 @@ public:
         for(auto& r : dsYeuCau) f3 << r.type << ";" << r.stk << ";" << r.ten << ";" << r.val << ";" << r.hang << ";" << r.pin << ";" << r.thoiGian << "\n";
         f3.close();
         ofstream f4("data/loans.csv", ios::trunc);
-        for(auto& v : dsVay) f4 << v.stk << ";" << (long long)v.soTien << ";" << v.hanTra << "\n";
+        for(auto& v : dsVay) f4 << v.stk << ";" << (long long)v.soTien << ";" << v.hanTra << ";" << v.laiSuat << "\n";
         f4.close();
         ofstream fs("data/system.csv", ios::trunc); fs << thoiGianTinhLai; fs.close();
     }
@@ -225,9 +226,13 @@ public:
         dsYeuCau.erase(remove_if(dsYeuCau.begin(), dsYeuCau.end(), [&](const YeuCau& r){ return r.stk == stk && r.type == type; }), dsYeuCau.end());
         Save();
     }
-    void AddVay(string stk, double amt, int phut) {
+    void AddVay(string stk, double amt, int phut, double ls = 0.05) {
         time_t now = time(0);
-        dsVay.emplace_back(stk, amt, (long long)now + phut * 60);
+        dsVay.emplace_back(stk, amt, (long long)now + phut * 60, ls);
+        Save();
+    }
+    void XoaVay(string stk) {
+        dsVay.erase(remove_if(dsVay.begin(), dsVay.end(), [&](const KhoanVay& v){ return v.stk == stk; }), dsVay.end());
         Save();
     }
     const vector<shared_ptr<TaiKhoan>>& GetDS() { return dsTK; }
@@ -347,11 +352,35 @@ int main() {
         for(auto& v : nh.GetDSVay()) {
             if(v.stk == stk) {
                 long long remaining = v.hanTra - (long long)time(0);
-                res.set_content("{\"status\":\"active\",\"amount\":"+to_string((long long)v.soTien)+",\"remaining\":"+to_string(remaining)+"}", "application/json");
+                double totalDue = v.soTien * (1.0 + v.laiSuat);
+                res.set_content("{\"status\":\"active\",\"amount\":"+to_string((long long)v.soTien)+",\"interestRate\":"+to_string(v.laiSuat)+",\"totalDue\":"+to_string((long long)totalDue)+",\"remaining\":"+to_string(remaining)+"}", "application/json");
                 return;
             }
         }
         res.set_content("{\"status\":\"none\"}", "application/json");
+    });
+
+    handle("/api/user/repay_loan", [&](const httplib::Request& req, httplib::Response& res) {
+        string stk = param(req, "stk"), pin = param(req, "pin");
+        auto tk = nh.Tim(stk);
+        if(!tk || tk->GetMaPIN() != pin) { res.set_content("{\"status\":\"error\",\"msg\":\"Sai mã PIN hoặc không tìm thấy TK\"}", "application/json"); return; }
+        
+        for(auto& v : nh.GetDSVay()) {
+            if(v.stk == stk) {
+                double totalDue = v.soTien * (1.0 + v.laiSuat);
+                if(tk->GetSoDu() < totalDue) {
+                    res.set_content("{\"status\":\"error\",\"msg\":\"Số dư không đủ để trả nợ (Cần " + to_string((long long)totalDue) + " VND)\"}", "application/json");
+                    return;
+                }
+                tk->SetSoDu(tk->GetSoDu() - totalDue);
+                nh.GhiLog(stk, "TRA_NO", -totalDue, "Tất toán khoản vay bao gồm lãi");
+                nh.XoaVay(stk);
+                nh.Save();
+                res.set_content("{\"status\":\"success\"}", "application/json");
+                return;
+            }
+        }
+        res.set_content("{\"status\":\"error\",\"msg\":\"Không có khoản vay nào\"}", "application/json");
     });
 
     handle("/api/user/request_reset_pin", [&](const httplib::Request& req, httplib::Response& res) {
@@ -385,7 +414,7 @@ int main() {
             if(!f) j+=","; f=false;
             auto tk = nh.Tim(v.stk);
             string ten = tk ? tk->GetTenKhachHang() : "N/A";
-            j += "{\"stk\":\""+v.stk+"\",\"name\":\""+ten+"\",\"amount\":"+to_string((long long)v.soTien)+",\"remaining\":"+to_string(v.hanTra - now)+"}";
+            j += "{\"stk\":\""+v.stk+"\",\"name\":\""+ten+"\",\"amount\":"+to_string((long long)v.soTien)+",\"interestRate\":"+to_string(v.laiSuat)+",\"remaining\":"+to_string(v.hanTra - now)+"}";
         }
         j+="]"; res.set_content(j, "application/json");
     });
