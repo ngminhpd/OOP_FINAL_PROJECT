@@ -97,7 +97,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <h2>Đăng nhập</h2>
             <div class="input-group"><label>Số tài khoản</label><input type="text" id="l-stk" placeholder="001"></div>
             <div class="input-group"><label>Mã PIN</label><input type="password" id="l-pin" placeholder="••••"></div>
-            <button class="btn-primary" onclick="doLogin()">Đăng nhập →</button>
+            <button class="btn-primary" id="btn-login" onclick="doLogin()">Đăng nhập →</button>
             <div class="login-links">
                 <a href="#" onclick="switchForm('form-register')">Đăng ký mới</a>
                 <span style="color:var(--muted)">|</span>
@@ -134,7 +134,6 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <button class="nav-btn" onclick="showSection('s-history', this); loadHistory()">📋 Lịch sử</button>
             <button class="nav-btn" onclick="showSection('s-upgrade', this)">✨ Nâng hạng</button>
             <button class="nav-btn" onclick="showSection('s-changepin', this)">🔐 Đổi PIN</button>
-            <button class="nav-btn" style="color:var(--success); margin-top: 1rem; border: 1px dashed var(--success)" onclick="refreshUser(); checkLoanStatus(); showToast('Đã cập nhật dữ liệu mới nhất')">🔄 Làm mới dữ liệu</button>
         </nav>
         <nav id="nav-admin" style="display:none">
             <button class="nav-btn active" onclick="showSection('a-accounts', this)">🗂️ Quản lý TK</button>
@@ -144,18 +143,14 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <button class="nav-btn" onclick="showSection('a-deposit', this)">💰 Nạp tại quầy</button>
             <button class="nav-btn" onclick="showSection('a-add', this)">➕ Mở tài khoản</button>
             <button class="nav-btn" onclick="calcInterest()">📈 Tính lãi</button>
-            <button class="nav-btn" style="color:var(--primary); margin-top: 1rem; border: 1px dashed var(--primary)" onclick="loadAdmin(); loadRequests(); showToast('Đã làm mới dữ liệu hệ thống')">🔄 Làm mới Admin</button>
-            <div id="last-interest-time" style="font-size:0.65rem; color:var(--muted); padding:0.5rem">Lần cuối tính lãi: ---</div>
+            <div id="last-interest-time" style="font-size:0.65rem; color:var(--muted); padding:0.5rem; margin-top: auto">Lần cuối tính lãi: ---</div>
         </nav>
         <button class="btn-logout" onclick="location.reload()">🚪 Đăng xuất</button>
     </aside>
     <main class="content">
         <section id="s-home" class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h1>Chào mừng <span id="u-rank-badge" class="badge"></span></h1>
-                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="refreshUser(); checkLoanStatus(); showToast('Đã cập nhật')">🔄 Làm mới</button>
-            </div>
-            <div class="balance-card">
+            <h1>Chào mừng <span id="u-rank-badge" class="badge"></span></h1>
+            <div class="balance-card" style="margin-top: 1rem;">
                 <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">SỐ DƯ HIỆN TẠI</div>
                 <div id="u-balance" class="balance-amount">0 VND</div>
                 <div id="u-balance-text" style="font-size:0.85rem; color:rgba(255,255,255,0.8); margin-top:0.3rem; font-style:italic"></div>
@@ -171,10 +166,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="s-transact" class="section" style="display:none">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h1>Thực hiện giao dịch</h1>
-                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="refreshUser(); showToast('Đã cập nhật số dư')">🔄 Làm mới</button>
-            </div>
+            <h1>Thực hiện giao dịch</h1>
             <div class="login-card" style="max-width:500px; margin-top:1.5rem">
                 <div class="input-group"><label>Loại giao dịch</label><select id="t-type" onchange="toggleDest()"><option value="nap">Nạp tiền vào tài khoản</option><option value="rut">Rút tiền mặt</option><option value="chuyen">Chuyển khoản</option></select></div>
                 <div class="input-group" id="t-dest-group" style="display:none"><label>Số tài khoản nhận</label><input type="text" id="t-dest" placeholder="VD: 002"></div>
@@ -185,11 +177,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="s-loan" class="section" style="display:none">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h1>Vay tiền & Đồng hồ đếm ngược</h1>
-                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="refreshUser(); checkLoanStatus(); showToast('Đã cập nhật trạng thái vay')">🔄 Làm mới</button>
-            </div>
-            
+            <h1>Vay tiền & Đồng hồ đếm ngược</h1>
             <div id="active-loan-area" style="display:none; margin-top:1.5rem">
                 <div class="balance-card" style="background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%); border-color: #f87171">
                     <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">KHOẢN VAY ĐANG HOẠT ĐỘNG</div>
@@ -238,10 +226,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="s-history" class="section" style="display:none">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h1>Lịch sử giao dịch</h1>
-                <button class="btn-xs btn-info" style="padding: 0.5rem 1rem;" onclick="loadHistory(); showToast('Đã cập nhật lịch sử')">🔄 Làm mới</button>
-            </div>
+            <h1>Lịch sử giao dịch</h1>
             <div id="history-list" style="margin-top:1.5rem"></div>
         </section>
 
@@ -255,10 +240,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="a-accounts" class="section" style="display:none">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h1>Quản lý tất cả tài khoản</h1>
-                <button class="btn-xs btn-primary" style="padding: 0.5rem 1rem; color: #0b1120" onclick="loadAdmin(); showToast('Đã cập nhật danh sách')">🔄 Làm mới</button>
-            </div>
+            <h1>Quản lý tất cả tài khoản</h1>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
                     <thead><tr><th>Loại TK</th><th>Số TK</th><th>Họ tên</th><th>Số dư</th><th>Hạng</th><th>Thao tác</th></tr></thead>
@@ -268,10 +250,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="a-requests" class="section" style="display:none">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h1>Yêu cầu chờ duyệt</h1>
-                <button class="btn-xs btn-primary" style="padding: 0.5rem 1rem; color: #0b1120" onclick="loadRequests(); showToast('Đã cập nhật yêu cầu')">🔄 Làm mới</button>
-            </div>
+            <h1>Yêu cầu chờ duyệt</h1>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
                     <thead><tr><th>Loại</th><th>Số TK</th><th>Họ tên</th><th>Nội dung</th><th>Thời gian</th><th>Thao tác</th></tr></thead>
@@ -281,10 +260,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="a-loans" class="section" style="display:none">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h1>Quản lý các khoản vay hiện có</h1>
-                <button class="btn-xs btn-primary" style="padding: 0.5rem 1rem; color: #0b1120" onclick="loadAdminLoans(); showToast('Đã cập nhật khoản vay')">🔄 Làm mới</button>
-            </div>
+            <h1>Quản lý các khoản vay hiện có</h1>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
                     <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Gốc</th><th>Lãi suất</th><th>Thời gian còn lại</th></tr></thead>
@@ -352,6 +328,15 @@ let adminLoanInterval = null;
 
 function showToast(m, e=false){ const t=document.getElementById('toast'); t.textContent=m; t.className='toast '+(e?'toast-err':'toast-ok'); t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
 
+// TỰ ĐỘNG CẬP NHẬT UI SAU MỖI 3 GIÂY ĐỂ ĐỒNG BỘ VỚI CLOUD
+setInterval(() => {
+    if(session.role === 'admin') {
+        loadAdmin(); loadRequests(); loadAdminLoans(); loadLoanHistory(); loadSystemInfo();
+    } else if(session.role === 'user') {
+        refreshUser(); checkLoanStatus();
+    }
+}, 3000);
+
 // Hàm đọc số tiền thành chữ
 function docSoThanhChu(so) {
     so = Math.floor(Math.abs(so));
@@ -393,7 +378,6 @@ function docSoThanhChu(so) {
     return str.charAt(0).toUpperCase() + str.slice(1) + " đồng";
 }
 
-// Hàm cập nhật chữ hiển thị khi nhập tiền
 function updateAmtText(val, displayId) {
     const textEl = document.getElementById(displayId);
     if(textEl) {
@@ -411,24 +395,24 @@ function formatTimer(sec) {
 }
 
 async function api(p, d=null){ const o={method:d?'POST':'GET'}; if(d){o.headers={'Content-Type':'application/x-www-form-urlencoded'}; o.body=new URLSearchParams(d).toString();} const r=await fetch(p,o); return r.json(); }
-function switchForm(id){ 
-    ['form-login', 'form-register', 'form-forgot'].forEach(f => document.getElementById(f).style.display = f === id ? 'block' : 'none');
-}
-function showSection(id, btn){ 
+function switchForm(id){ ['form-login', 'form-register', 'form-forgot'].forEach(f => document.getElementById(f).style.display = f === id ? 'block' : 'none'); }
+
+async function showSection(id, btn){ 
     document.querySelectorAll('.section').forEach(s=>s.style.display='none'); 
     document.getElementById(id).style.display='block'; 
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); 
     if(btn) btn.classList.add('active'); 
+    
     if(id==='a-accounts') loadAdmin(); 
     if(id==='a-requests') loadRequests();
     if(session.role === 'admin') loadSystemInfo();
 }
+
 function toggleDest(){ document.getElementById('t-dest-group').style.display=document.getElementById('t-type').value==='chuyen'?'block':'none'; }
 function toggleLimit(){ 
     const t=document.getElementById('aa-type').value; 
     document.getElementById('aa-hm-group').style.display=t==='TinDung'?'block':'none'; 
     document.getElementById('aa-sodu-group').style.display=t==='TinDung'?'none':'block';
-    document.getElementById('aa-warning').style.display=t==='TinDung'?'block':'none';
 }
 
 async function doLogin(){
@@ -445,10 +429,7 @@ async function doLogin(){
     } else showToast(res.msg || 'Sai thông tin', true);
 }
 
-async function loadSystemInfo(){
-    const res = await api('/api/admin/system_info');
-    document.getElementById('last-interest-time').textContent = 'Lần cuối tính lãi: ' + res.lastInterest;
-}
+async function loadSystemInfo(){ const res = await api('/api/admin/system_info'); document.getElementById('last-interest-time').textContent = 'Lần cuối tính lãi: ' + res.lastInterest; }
 
 async function doRegister(){
     const s=document.getElementById('r-stk').value, t=document.getElementById('r-ten').value, p=document.getElementById('r-pin').value, y=document.getElementById('r-type').value;
@@ -467,16 +448,8 @@ async function refreshUser(){
     const d=await api('/api/user/info?stk='+session.stk);
     document.getElementById('u-balance').textContent=Number(d.balance).toLocaleString()+' VND';
     document.getElementById('u-balance-text').textContent = '(' + docSoThanhChu(d.balance) + ')';
-    
-    // Cập nhật số dư tiền vay
     const loanEl = document.getElementById('u-loan-balance-display');
-    if(d.loanBalance > 0) {
-        loanEl.style.display = 'block';
-        loanEl.textContent = '(Tiền vay khả dụng: ' + Number(d.loanBalance).toLocaleString() + ' VND)';
-    } else {
-        loanEl.style.display = 'none';
-    }
-
+    if(d.loanBalance > 0) { loanEl.style.display = 'block'; loanEl.textContent = '(Tiền vay khả dụng: ' + Number(d.loanBalance).toLocaleString() + ' VND)'; } else { loanEl.style.display = 'none'; }
     document.getElementById('u-name').textContent=d.name;
     document.getElementById('u-type').textContent=d.type;
     document.getElementById('u-interest').textContent=Number(d.interest).toLocaleString()+' VND';
@@ -493,8 +466,7 @@ async function doTransact(){
 }
 
 async function doRequestLoan(){
-    const a = document.getElementById('loan-amt').value;
-    const p = document.getElementById('loan-phut').value;
+    const a = document.getElementById('loan-amt').value; const p = document.getElementById('loan-phut').value;
     if(!a || a <= 0) { showToast('Nhập số tiền hợp lệ', true); return; }
     const res = await api('/api/user/request_loan', {stk:session.stk, amount:a, phut:p});
     if(res.status==='success') { showToast('Đã gửi yêu cầu vay'); document.getElementById('loan-amt').value=''; } 
@@ -502,17 +474,10 @@ async function doRequestLoan(){
 }
 
 async function doRepayLoan(){
-    const p = document.getElementById('repay-pin').value;
-    if(!p) { showToast('Vui lòng nhập mã PIN', true); return; }
-    if(!confirm('Bạn có chắc chắn muốn trả nợ và tất toán khoản vay này?')) return;
-    
+    const p = document.getElementById('repay-pin').value; if(!p) { showToast('Vui lòng nhập mã PIN', true); return; }
+    if(!confirm('Bạn có chắc chắn muốn trả nợ?')) return;
     const res = await api('/api/user/repay_loan', {stk:session.stk, pin:p});
-    if(res.status === 'success') {
-        showToast('Đã tất toán khoản vay thành công');
-        document.getElementById('repay-pin').value = '';
-        refreshUser();
-        checkLoanStatus();
-    } else showToast(res.msg, true);
+    if(res.status === 'success') { showToast('Đã tất toán khoản vay'); document.getElementById('repay-pin').value = ''; refreshUser(); } else showToast(res.msg, true);
 }
 
 async function checkLoanStatus(){
@@ -522,125 +487,54 @@ async function checkLoanStatus(){
     const timer = document.getElementById('loan-timer');
     const info = document.getElementById('loan-info-text');
     const totalDue = document.getElementById('loan-total-due');
-
     if(res.status === 'active'){
         area.style.display = 'block';
         info.textContent = `Gốc: ${Number(res.amount).toLocaleString()} VND (Lãi: ${(res.interestRate*100).toFixed(1)}%)`;
         totalDue.textContent = `Tổng nợ cần trả: ${Number(res.totalDue).toLocaleString()} VND`;
-        
         if(loanInterval) clearInterval(loanInterval);
-        
-        if(res.remaining <= 0) {
-            timer.textContent = "HẾT HẠN / QUÁ HẠN";
-            timer.style.color = "#f87171";
-            return;
-        }
-
-        let timeLeft = res.remaining;
-        timer.style.color = "#fecaca";
-        const updateTimer = () => {
-            if(timeLeft <= 0) {
-                timer.textContent = "HẾT HẠN";
-                timer.style.color = "#f87171";
-                clearInterval(loanInterval);
-                return;
-            }
-            timer.innerHTML = formatTimer(timeLeft);
-            timeLeft--;
-        };
-        updateTimer();
-        loanInterval = setInterval(updateTimer, 1000);
-    } else {
-        area.style.display = 'none';
-        if(loanInterval) clearInterval(loanInterval);
-    }
+        if(res.remaining <= 0) { timer.textContent = "HẾT HẠN / QUÁ HẠN"; timer.style.color = "#f87171"; return; }
+        let timeLeft = res.remaining; timer.style.color = "#fecaca";
+        const updateTimer = () => { if(timeLeft <= 0) { timer.textContent = "HẾT HẠN"; timer.style.color = "#f87171"; clearInterval(loanInterval); return; } timer.innerHTML = formatTimer(timeLeft); timeLeft--; };
+        updateTimer(); loanInterval = setInterval(updateTimer, 1000);
+    } else { area.style.display = 'none'; if(loanInterval) clearInterval(loanInterval); }
 }
 
 async function doRequestUpgrade(){
     const h = document.getElementById('u-req-hang').value;
     const res = await api('/api/user/request_upgrade', {stk:session.stk, hang:h});
-    if(res.status==='success') showToast('Đã gửi yêu cầu'); else showToast('Lỗi', true);
+    if(res.status==='success') { showToast('Đã gửi yêu cầu'); } else showToast('Lỗi', true);
 }
 
 async function loadHistory(){
     const data=await api('/api/user/history?stk='+session.stk);
     document.getElementById('history-list').innerHTML=data.map(gd=>{
         const plus=gd.amount>=0;
-        const amountStr = Number(gd.amount).toLocaleString();
-        const textStr = docSoThanhChu(gd.amount);
-        return `<div class="history-item">
-            <div class="history-info">
-                <div style="font-weight:600">${gd.type} - ${gd.note}</div>
-                <div style="font-size:0.75rem; color:var(--muted)">${gd.time}</div>
-            </div>
-            <div style="text-align:right">
-                <div class="history-amount ${plus?'amount-plus':'amount-minus'}">${plus?'+':''}${amountStr}</div>
-                <div style="font-size:0.7rem; color:var(--muted); font-style:italic">${textStr}</div>
-            </div>
-        </div>`;
+        return `<div class="history-item"><div class="history-info"><div style="font-weight:600">${gd.type} - ${gd.note}</div><div style="font-size:0.75rem; color:var(--muted)">${gd.time}</div></div><div style="text-align:right"><div class="history-amount ${plus?'amount-plus':'amount-minus'}">${plus?'+':''}${Number(gd.amount).toLocaleString()}</div><div style="font-size:0.7rem; color:var(--muted); font-style:italic">${docSoThanhChu(gd.amount)}</div></div></div>`;
     }).join('') || '<p style="text-align:center; color:var(--muted)">Chưa có giao dịch nào</p>';
 }
 
 async function doChangePin(){
     const o=document.getElementById('cp-old').value, n=document.getElementById('cp-new').value;
     const res=await api('/api/user/changepin', {stk:session.stk, oldpin:o, newpin:n});
-    if(res.status==='success') showToast('Đã đổi PIN'); else showToast(res.msg, true);
+    if(res.status==='success') { showToast('Đã đổi PIN'); } else showToast(res.msg, true);
 }
 
 async function loadAdmin(){
     const data=await api('/api/admin/all');
-    document.getElementById('admin-tbody').innerHTML=data.map(tk=>`
-        <tr>
-            <td><span class="badge badge-${tk.type}">${tk.type}</span></td><td>${tk.stk}</td><td>${tk.name}</td><td>${Number(tk.balance).toLocaleString()}</td>
-            <td><span class="badge badge-${tk.hang.replace(/\s/g,'')}">${tk.hang}</span></td>
-            <td>
-                <button class="btn-xs btn-info" onclick="openUpgradeModal('${tk.stk}')">Hạng</button>
-                <button class="btn-xs btn-warning" onclick="toggleLock('${tk.stk}', ${tk.locked})">${tk.locked?'Mở':'Khóa'}</button>
-                <button class="btn-xs btn-danger" style="width:auto" onclick="doDelete('${tk.stk}')">Xóa</button>
-            </td>
-        </tr>
-    `).join('');
+    document.getElementById('admin-tbody').innerHTML=data.map(tk=>`<tr><td><span class="badge badge-${tk.type}">${tk.type}</span></td><td>${tk.stk}</td><td>${tk.name}</td><td>${Number(tk.balance).toLocaleString()}</td><td><span class="badge badge-${tk.hang.replace(/\s/g,'')}">${tk.hang}</span></td><td><button class="btn-xs btn-info" onclick="openUpgradeModal('${tk.stk}')">Hạng</button><button class="btn-xs btn-warning" onclick="toggleLock('${tk.stk}', ${tk.locked})">${tk.locked?'Mở':'Khóa'}</button><button class="btn-xs btn-danger" style="width:auto" onclick="doDelete('${tk.stk}')">Xóa</button></td></tr>`).join('');
 }
 
 async function loadAdminLoans(){
-    const data = await api('/api/admin/loans');
-    const tbody = document.getElementById('admin-loan-tbody');
-    
+    const data = await api('/api/admin/loans'); const tbody = document.getElementById('admin-loan-tbody');
     if(adminLoanInterval) clearInterval(adminLoanInterval);
-    
-    const render = () => {
-        tbody.innerHTML = data.map(v => `
-            <tr>
-                <td>${v.stk}</td><td>${v.name}</td><td>${Number(v.amount).toLocaleString()} VND</td>
-                <td>${v.interestRate ? (v.interestRate*100).toFixed(1) : '5.0'}%</td>
-                <td id="admin-loan-timer-${v.stk}">${formatTimer(v.remaining)}</td>
-            </tr>
-        `).join('') || '<tr><td colspan="5" style="text-align:center">Không có khoản vay nào</td></tr>';
-    };
+    const render = () => { tbody.innerHTML = data.map(v => `<tr><td>${v.stk}</td><td>${v.name}</td><td>${Number(v.amount).toLocaleString()} VND</td><td>${(v.interestRate*100).toFixed(1)}%</td><td id="admin-loan-timer-${v.stk}">${formatTimer(v.remaining)}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center">Không có khoản vay nào</td></tr>'; };
     render();
-    
-    adminLoanInterval = setInterval(() => {
-        data.forEach(v => {
-            v.remaining--;
-            const el = document.getElementById(`admin-loan-timer-${v.stk}`);
-            if(el) el.innerHTML = formatTimer(v.remaining);
-        });
-    }, 1000);
+    adminLoanInterval = setInterval(() => { data.forEach(v => { v.remaining--; const el = document.getElementById(`admin-loan-timer-${v.stk}`); if(el) el.innerHTML = formatTimer(v.remaining); }); }, 1000);
 }
 
 async function loadLoanHistory(){
     const data = await api('/api/admin/loan_history');
-    document.getElementById('loan-history-tbody').innerHTML = data.map(l => `
-        <tr>
-            <td>${l.stk}</td>
-            <td>${l.name}</td>
-            <td>${Number(l.amount).toLocaleString()} VND</td>
-            <td>${(l.rate*100).toFixed(1)}%</td>
-            <td>${l.han}</td>
-            <td>${l.time}</td>
-            <td><span class="badge ${l.status==='Đã trả'?'badge-TietKiem':'badge-TinDung'}">${l.status}</span></td>
-        </tr>
-    `).reverse().join('') || '<tr><td colspan="7" style="text-align:center">Chưa có dữ liệu</td></tr>';
+    document.getElementById('loan-history-tbody').innerHTML = data.map(l => `<tr><td>${l.stk}</td><td>${l.name}</td><td>${Number(l.amount).toLocaleString()} VND</td><td>${(l.rate*100).toFixed(1)}%</td><td>${l.han}</td><td>${l.time}</td><td><span class="badge ${l.status==='Đã trả'?'badge-TietKiem':'badge-TinDung'}">${l.status}</span></td></tr>`).reverse().join('') || '<tr><td colspan="7" style="text-align:center">Chưa có dữ liệu</td></tr>';
 }
 
 function openUpgradeModal(stk){ document.getElementById('up-stk').value = stk; document.getElementById('upgrade-modal').style.display = 'flex'; }
@@ -653,19 +547,12 @@ async function confirmUpgrade(h){
 async function loadRequests(){
     const data = await api('/api/admin/upgrade_requests');
     document.getElementById('req-tbody').innerHTML = data.map(r=>{
-        let content = r.val;
-        let badgeClass = 'badge-VIP';
+        let content = r.val; let badgeClass = 'badge-VIP';
         if(r.type === 'LOAN') { content = Number(r.val).toLocaleString() + ' VND (Hạn: ' + r.hang + ' phút)'; badgeClass = 'badge-TinDung'; }
         else if(r.type === 'UPGRADE') content = 'Nâng hạng: ' + r.val;
         else if(r.type === 'RESET_PIN') { content = 'Cấp lại mã PIN'; badgeClass = 'badge-TietKiem'; }
-
-        return `
-        <tr>
-            <td><span class="badge ${badgeClass}">${r.type}</span></td>
-            <td>${r.stk}</td><td>${r.name}</td><td>${content}</td><td>${r.time}</td>
-            <td><button class="btn-xs btn-success" onclick="approveRequest('${r.stk}', '${r.type}', '${r.val}', '${r.hang}')">Duyệt</button></td>
-        </tr>
-    `}).join('') || '<tr><td colspan="6" style="text-align:center">Trống</td></tr>';
+        return `<tr><td><span class="badge ${badgeClass}">${r.type}</span></td><td>${r.stk}</td><td>${r.name}</td><td>${content}</td><td>${r.time}</td><td><button class="btn-xs btn-success" onclick="approveRequest('${r.stk}', '${r.type}', '${r.val}', '${r.hang}')">Duyệt</button></td></tr>`
+    }).join('') || '<tr><td colspan="6" style="text-align:center">Trống</td></tr>';
 }
 
 async function approveRequest(stk, type, val, hang){
@@ -676,19 +563,18 @@ async function approveRequest(stk, type, val, hang){
 async function doAdminDeposit(){
     const s=document.getElementById('ad-stk').value, a=document.getElementById('ad-amt').value;
     const res=await api('/api/admin/deposit', {stk:s, amount:a});
-    if(res.status==='success'){ showToast('Đã nạp'); loadAdmin(); } else showToast(res.msg, true);
+    if(res.status==='success'){ showToast('Đã nạp tiền thành công'); } else showToast(res.msg, true);
 }
 
 async function doAdminAdd(){
     const s=document.getElementById('aa-stk').value, t=document.getElementById('aa-ten').value, p=document.getElementById('aa-pin').value, y=document.getElementById('aa-type').value;
     const sodu = y==='TinDung'?document.getElementById('aa-hm').value:document.getElementById('aa-sodu').value;
-    
     const res=await api('/api/admin/add', {stk:s, ten:t, pin:p, type:y, sodu:sodu});
-    if(res.status==='success'){ showToast('Đã tạo'); loadAdmin(); } else showToast(res.msg, true);
+    if(res.status==='success'){ showToast('Đã tạo tài khoản'); } else showToast(res.msg, true);
 }
 
 async function doDelete(stk){ if(confirm('Xóa tài khoản này?')){ await api('/api/admin/delete', {stk}); loadAdmin(); } }
-async function calcInterest(){ if(confirm('Tính lãi toàn hệ thống?')){ await api('/api/admin/interest'); loadAdmin(); loadSystemInfo(); showToast('Đã cộng lãi'); } }
+async function calcInterest(){ if(confirm('Tính lãi toàn hệ thống?')){ await api('/api/admin/interest'); loadAdmin(); loadSystemInfo(); } }
 async function toggleLock(stk, cur){ await api('/api/admin/lock', {stk, lock:cur?0:1}); loadAdmin(); }
 </script>
 </body>
