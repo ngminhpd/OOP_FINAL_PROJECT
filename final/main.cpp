@@ -64,9 +64,10 @@ class TaiKhoan {
 protected:
     string SoTaiKhoan, TenKhachHang, MaPIN, Hang;
     double SoDu, SoDuVay; bool DaKhoa;
+    double HanMucTinDung, NoTinDung; // Thuộc tính mới cho tín dụng liên kết
 public:
-    TaiKhoan(string stk, string ten, double du, string pin = "1234", bool khoa = false, string hang = "Thành viên", double duVay = 0)
-        : SoTaiKhoan(stk), TenKhachHang(ten), SoDu(du), SoDuVay(duVay), MaPIN(pin), DaKhoa(khoa), Hang(hang) {}
+    TaiKhoan(string stk, string ten, double du, string pin = "1234", bool khoa = false, string hang = "Thành viên", double duVay = 0, double hmTD = 0, double noTD = 0)
+        : SoTaiKhoan(stk), TenKhachHang(ten), SoDu(du), SoDuVay(duVay), MaPIN(pin), DaKhoa(khoa), Hang(hang), HanMucTinDung(hmTD), NoTinDung(noTD) {}
     virtual ~TaiKhoan() {}
     virtual void NapTien(double amt) { if (amt > 0) SoDu += amt; }
     void NapTienVay(double amt) { if (amt > 0) SoDuVay += amt; }
@@ -77,6 +78,16 @@ public:
         if(SoDu >= amt) { SoDu -= amt; } else { double rem = amt - SoDu; SoDu = 0; SoDuVay -= rem; }
         return true;
     }
+    // Giao dịch tín dụng liên kết
+    virtual bool RutTienTinDung(double amt) {
+        if(DaKhoa || HanMucTinDung <= 0 || amt <= 0) return false;
+        if(NoTinDung + amt > HanMucTinDung) return false;
+        NoTinDung += amt; return true;
+    }
+    virtual void NapTienTinDung(double amt) {
+        if(amt > 0) { if(NoTinDung >= amt) NoTinDung -= amt; else NoTinDung = 0; }
+    }
+
     virtual double TinhLai() = 0;
     string GetSoTaiKhoan() const { return SoTaiKhoan; }
     string GetTenKhachHang() const { return TenKhachHang; }
@@ -84,10 +95,7 @@ public:
     bool IsLocked() const { return DaKhoa; }
     void SetLocked(bool s) { DaKhoa = s; }
     
-    // GetSoDu dùng để LẤY GIÁ TRỊ GỐC lưu vào database (Số dư thực hoặc Nợ thực)
     double GetSoDu() const { return SoDu; }
-    
-    // GetBalance dùng để HIỂN THỊ lên giao diện (Tính toán theo loại tài khoản)
     virtual double GetBalance() const { return SoDu; }
     
     double GetSoDuVay() const { return SoDuVay; }
@@ -97,11 +105,17 @@ public:
     void SetMaPIN(string p) { MaPIN = p; }
     string GetHang() const { return Hang; }
     void SetHang(string h) { Hang = h; }
+
+    double GetHanMucTinDung() const { return HanMucTinDung; }
+    void SetHanMucTinDung(double h) { HanMucTinDung = h; }
+    double GetNoTinDung() const { return NoTinDung; }
+    void SetNoTinDung(double n) { NoTinDung = n; }
 };
 
 class TaiKhoanThanhToan : public TaiKhoan {
 public:
-    TaiKhoanThanhToan(string a, string b, double c, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv) {}
+    TaiKhoanThanhToan(string a, string b, double c, string p="1234", bool k=false, string h="Thành viên", double dv=0, double hmTD=0, double noTD=0) 
+        : TaiKhoan(a,b,c,p,k,h,dv,hmTD,noTD) {}
     bool RutTien(double s) override { return ThucHienRut(s, 50000); }
     double TinhLai() override { return SoDu * 0.001; }
 };
@@ -109,7 +123,8 @@ public:
 class TaiKhoanTietKiem : public TaiKhoan {
     double LaiSuat; int KyHan;
 public:
-    TaiKhoanTietKiem(string a, string b, double c, double ls, int kh, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv), LaiSuat(ls), KyHan(kh) {}
+    TaiKhoanTietKiem(string a, string b, double c, double ls, int kh, string p="1234", bool k=false, string h="Thành viên", double dv=0, double hmTD=0, double noTD=0) 
+        : TaiKhoan(a,b,c,p,k,h,dv,hmTD,noTD), LaiSuat(ls), KyHan(kh) {}
     bool RutTien(double s) override { return ThucHienRut(s, 0); }
     double TinhLai() override { return SoDu * LaiSuat; }
     double GetLaiSuat() const { return LaiSuat; }
@@ -119,11 +134,11 @@ public:
 class TaiKhoanTinDung : public TaiKhoan {
     double HanMuc;
 public:
-    TaiKhoanTinDung(string a, string b, double c, double hm, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv), HanMuc(hm) {}
+    TaiKhoanTinDung(string a, string b, double c, double hm, string p="1234", bool k=false, string h="Thành viên", double dv=0) 
+        : TaiKhoan(a,b,c,p,k,h,dv), HanMuc(hm) {}
     void NapTien(double amt) override { if (amt > 0) { if (SoDu >= amt) SoDu -= amt; else SoDu = 0; } }
     bool RutTien(double s) override { if(!DaKhoa && s > 0 && SoDu + s <= HanMuc) { SoDu += s; return true; } return false; }
     
-    // UI hiển thị: Tiền khả dụng = Hạn mức - Nợ
     double GetBalance() const override { return HanMuc - SoDu; }
     
     double TinhLai() override { return SoDu > 0 ? SoDu * 0.2 : 0; }
@@ -277,16 +292,18 @@ public:
                 if(l.empty()) continue;
                 stringstream row(l);
                 if(mode=="acc") {
-                    string tp, stk, ten, pin, du_s, khoa_s, ls_s, kh_s, hm_s, hang, dv_s;
+                    string tp, stk, ten, pin, du_s, khoa_s, ls_s, kh_s, hm_s, hang, dv_s, hmTD_s, noTD_s;
                     getline(row, tp, ';'); getline(row, stk, ';'); getline(row, ten, ';'); getline(row, pin, ';'); 
                     getline(row, du_s, ';'); getline(row, khoa_s, ';'); getline(row, ls_s, ';'); getline(row, kh_s, ';'); 
                     getline(row, hm_s, ';'); getline(row, hang, ';'); getline(row, dv_s, ';');
+                    getline(row, hmTD_s, ';'); getline(row, noTD_s, ';');
                     Clean(stk); Clean(pin);
                     if(stk.empty()) continue;
                     try {
                         double du = stod(du_s); bool k = (khoa_s=="1"); double dv = dv_s.empty()?0:stod(dv_s);
-                        if(tp=="ThanhToan") nextTK.push_back(make_shared<TaiKhoanThanhToan>(stk, ten, du, pin, k, hang, dv));
-                        else if(tp=="TietKiem") nextTK.push_back(make_shared<TaiKhoanTietKiem>(stk, ten, du, stod(ls_s), stoi(kh_s), pin, k, hang, dv));
+                        double hmTD = hmTD_s.empty()?0:stod(hmTD_s); double noTD = noTD_s.empty()?0:stod(noTD_s);
+                        if(tp=="ThanhToan") nextTK.push_back(make_shared<TaiKhoanThanhToan>(stk, ten, du, pin, k, hang, dv, hmTD, noTD));
+                        else if(tp=="TietKiem") nextTK.push_back(make_shared<TaiKhoanTietKiem>(stk, ten, du, stod(ls_s), stoi(kh_s), pin, k, hang, dv, hmTD, noTD));
                         else if(tp=="TinDung") nextTK.push_back(make_shared<TaiKhoanTinDung>(stk, ten, du, stod(hm_s), pin, k, hang, dv));
                     } catch(...) {}
                 } else if(mode=="req") {
@@ -345,7 +362,7 @@ public:
             string tp = "ThanhToan", ls = "", kh = "", hm = "";
             if(auto* s = dynamic_cast<TaiKhoanTietKiem*>(tk.get())) { tp="TietKiem"; ls=to_string(s->GetLaiSuat()); kh=to_string(s->GetKyHan()); }
             else if(auto* d = dynamic_cast<TaiKhoanTinDung*>(tk.get())) { tp="TinDung"; hm=to_string((long long)d->GetHanMuc()); }
-            accSS << tp << ";'" << tk->GetSoTaiKhoan() << ";" << tk->GetTenKhachHang() << ";'" << tk->GetMaPIN() << ";" << fixed << setprecision(0) << tk->GetSoDu() << ";" << (tk->IsLocked()?"1":"0") << ";" << ls << ";" << kh << ";" << hm << ";" << tk->GetHang() << ";" << (long long)tk->GetSoDuVay() << "\n";
+            accSS << tp << ";'" << tk->GetSoTaiKhoan() << ";" << tk->GetTenKhachHang() << ";'" << tk->GetMaPIN() << ";" << fixed << setprecision(0) << tk->GetSoDu() << ";" << (tk->IsLocked()?"1":"0") << ";" << ls << ";" << kh << ";" << hm << ";" << tk->GetHang() << ";" << (long long)tk->GetSoDuVay() << ";" << (long long)tk->GetHanMucTinDung() << ";" << (long long)tk->GetNoTinDung() << "\n";
         }
         
         for(auto& it : dsLS) {
@@ -527,8 +544,8 @@ int main() {
         string type = "Thanh Toán"; double hm = 0;
         if(dynamic_cast<TaiKhoanTietKiem*>(tk.get())) type="Tiết Kiệm";
         else if(auto* d = dynamic_cast<TaiKhoanTinDung*>(tk.get())) { type="Tín Dụng"; hm=d->GetHanMuc(); }
-        // Sử dụng GetBalance() để hiển thị đúng số dư khả dụng
-        res.set_content("{\"balance\":"+to_string((long long)tk->GetBalance())+",\"loanBalance\":"+to_string((long long)tk->GetSoDuVay())+",\"name\":\""+tk->GetTenKhachHang()+"\",\"type\":\""+type+"\",\"interest\":"+to_string((long long)tk->TinhLai())+",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\",\"hanMuc\":"+to_string((long long)hm)+"}", "application/json");
+        // Trả thêm thông tin tín dụng liên kết
+        res.set_content("{\"balance\":"+to_string((long long)tk->GetBalance())+",\"loanBalance\":"+to_string((long long)tk->GetSoDuVay())+",\"name\":\""+tk->GetTenKhachHang()+"\",\"type\":\""+type+"\",\"interest\":"+to_string((long long)tk->TinhLai())+",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\",\"hanMuc\":"+to_string((long long)hm)+",\"hmTD\":"+to_string((long long)tk->GetHanMucTinDung())+",\"noTD\":"+to_string((long long)tk->GetNoTinDung())+"}", "application/json");
     });
 
     handle("/api/user/history", [&](const httplib::Request& req, httplib::Response& res) {
@@ -545,7 +562,7 @@ int main() {
     });
 
     handle("/api/user/transact", [&](const httplib::Request& req, httplib::Response& res) {
-        string stk=param(req,"stk"), type=param(req,"type"), pin=param(req,"pin"), dest=param(req,"dest"), note=param(req,"note");
+        string stk=param(req,"stk"), type=param(req,"type"), pin=param(req,"pin"), dest=param(req,"dest"), note=param(req,"note"), source=param(req,"source");
         if(note.empty()) note = (type=="nap"?"Nạp tiền":type=="rut"?"Rút tiền":"Chuyển khoản");
         double amt = 0;
         try { amt = stod(param(req,"amount")); } catch(...) { res.set_content("{\"status\":\"error\",\"msg\":\"Số tiền không hợp lệ\"}", "application/json"); return; }
@@ -557,13 +574,19 @@ int main() {
             if(amt <= 0) throw runtime_error("Số tiền phải lớn hơn 0");
 
             if(type=="nap") {
-                tk->NapTien(amt);
-                nh.GhiLog(stk, "NAP", amt, note);
+                if(source == "credit") {
+                    tk->NapTienTinDung(amt);
+                    nh.GhiLog(stk, "TRA_NO_TD", amt, "Thanh toán nợ tín dụng");
+                } else {
+                    tk->NapTien(amt);
+                    nh.GhiLog(stk, "NAP", amt, note);
+                }
             }
             else if(type=="rut") {
                 if(tk->GetMaPIN() != pin) throw runtime_error("Sai mã PIN");
-                if(!tk->RutTien(amt)) throw runtime_error("Số dư không đủ");
-                nh.GhiLog(stk, "RUT", -amt, note);
+                bool ok = (source == "credit") ? tk->RutTienTinDung(amt) : tk->RutTien(amt);
+                if(!ok) throw runtime_error("Số dư hoặc hạn mức không đủ");
+                nh.GhiLog(stk, (source == "credit" ? "RUT_TD" : "RUT"), -amt, note + (source == "credit" ? " (Từ tín dụng)" : ""));
             }
             else if(type=="chuyen") {
                 if(stk == dest) throw runtime_error("Không thể chuyển cho chính mình");
@@ -572,11 +595,12 @@ int main() {
                 if(dt->IsLocked()) throw runtime_error("Tài khoản thụ hưởng đang bị khóa");
                 if(tk->GetMaPIN() != pin) throw runtime_error("Sai mã PIN");
                 
-                if(tk->RutTien(amt)) {
+                bool ok = (source == "credit") ? tk->RutTienTinDung(amt) : tk->RutTien(amt);
+                if(ok) {
                     dt->NapTien(amt);
-                    nh.GhiLog(stk, "CHUYEN", -amt, "Chuyển đến " + dest + ": " + note);
+                    nh.GhiLog(stk, "CHUYEN", -amt, "Chuyển đến " + dest + ": " + note + (source == "credit" ? " (Từ tín dụng)" : ""));
                     nh.GhiLog(dest, "NHAN_TIEN", amt, "Nhận từ " + stk + ": " + note);
-                } else throw runtime_error("Số dư không đủ để chuyển khoản");
+                } else throw runtime_error("Số dư hoặc hạn mức không đủ");
             }
             else throw runtime_error("Loại giao dịch không hợp lệ");
 
@@ -585,6 +609,11 @@ int main() {
         } catch(exception& e) {
             res.set_content("{\"status\":\"error\",\"msg\":\"" + string(e.what()) + "\"}", "application/json");
         }
+    });
+
+    handle("/api/user/request_credit", [&](const httplib::Request& req, httplib::Response& res) {
+        nh.AddYeuCau(YeuCau("CREDIT", param(req,"stk"), "", "20000000", "Mở thẻ tín dụng"));
+        res.set_content("{\"status\":\"success\"}", "application/json");
     });
 
     handle("/api/user/request_loan", [&](const httplib::Request& req, httplib::Response& res) {
@@ -644,6 +673,9 @@ int main() {
         if(tk) {
             if(type=="LOAN") { double a = stod(val); int p = stoi(hang); tk->NapTien(a); nh.AddVay(stk, a, p); }
             else if(type=="UPGRADE") tk->SetHang(val);
+            else if(type=="CREDIT") { tk->SetHanMucTinDung(stod(val)); tk->SetNoTinDung(0); }
+            else if(type=="RESET_PIN") tk->SetMaPIN("1234");
+            
             nh.XoaYeuCau(stk, type); res.set_content("{\"status\":\"success\"}", "application/json");
         } else res.set_content("{\"status\":\"error\"}", "application/json");
     });

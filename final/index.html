@@ -157,6 +157,11 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
                 <div id="u-loan-balance-display" style="font-size:0.9rem; color:var(--warning); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:0.5rem; display:none"></div>
                 <div id="u-type" style="font-size:0.8rem; opacity:0.6; margin-top:0.5rem">---</div>
             </div>
+            <div class="balance-card" id="u-credit-area" style="margin-top: 1rem; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-color: #818cf8; display:none">
+                <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">TÍN DỤNG LIÊN KẾT</div>
+                <div id="u-credit-available" class="balance-amount" style="color:#c7d2fe">0 VND</div>
+                <div style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:0.3rem">Hạn mức: <span id="u-credit-limit">0</span> VND | Đang nợ: <span id="u-credit-debt" style="color:#fca5a5">0</span> VND</div>
+            </div>
             <div class="info-grid">
                 <div class="info-card"><label style="font-size:0.7rem; color:var(--muted)">CHỦ TÀI KHOẢN</label><div id="u-name" style="font-weight:600">---</div></div>
                 <div class="info-card"><label style="font-size:0.7rem; color:var(--muted)">HẠNG THÀNH VIÊN</label><div id="u-rank" style="font-weight:600">---</div></div>
@@ -169,7 +174,9 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <h1>Thực hiện giao dịch</h1>
             <div class="login-card" style="max-width:500px; margin-top:1.5rem">
                 <div class="input-group"><label>Loại giao dịch</label><select id="t-type" onchange="toggleDest()"><option value="nap">Nạp tiền vào tài khoản</option><option value="rut">Rút tiền mặt</option><option value="chuyen">Chuyển khoản</option></select></div>
-                <div class="input-group" id="t-dest-group" style="display:none"><label>Số tài khoản nhận</label><input type="text" id="t-dest" placeholder="VD: 002"></div>
+                <div class="input-group" id="t-source-group" style="display:none"><label>Nguồn tiền</label><select id="t-source"><option value="main">Tài khoản chính</option><option value="credit">Thẻ tín dụng (Liên kết)</option></select></div>
+                <div class="input-group" id="t-dest-group" style="display:none">
+<label>Số tài khoản nhận</label><input type="text" id="t-dest" placeholder="VD: 002"></div>
                 <div class="input-group"><label>Số tiền (VND)</label><input type="number" id="t-amt" placeholder="100000" oninput="updateAmtText(this.value, 't-amt-text')"><div id="t-amt-text" style="font-size:0.75rem; color:var(--primary); margin-top:0.3rem; font-style:italic"></div></div>
                 <div class="input-group" id="t-pin-group"><label>Mã PIN xác thực</label><input type="password" id="t-pin" placeholder="••••"></div>
                 <button class="btn-primary" onclick="doTransact()">Xác nhận giao dịch →</button>
@@ -222,6 +229,12 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
                     </select>
                 </div>
                 <button class="btn-primary" onclick="doRequestUpgrade()">Gửi yêu cầu →</button>
+            </div>
+            
+            <div id="u-credit-request-area" class="login-card" style="max-width:400px; margin-top:1.5rem">
+                <h3>Thẻ tín dụng liên kết</h3>
+                <p style="font-size:0.85rem; color:var(--muted); margin-top:0.5rem; margin-bottom:1rem">Mở thẻ tín dụng liên kết với tài khoản hiện tại. Hạn mức mặc định 20,000,000 VND.</p>
+                <button class="btn-primary" style="background:var(--accent)" onclick="doRequestCredit()">Yêu cầu mở thẻ ngay</button>
             </div>
         </section>
 
@@ -462,13 +475,34 @@ async function refreshUser(){
     document.getElementById('u-rank').textContent=d.hang;
     document.getElementById('u-limit-card').style.display=d.type==='Tín Dụng'?'block':'none';
     if(d.type==='Tín Dụng') document.getElementById('u-limit').textContent=Number(d.hanMuc).toLocaleString()+' VND';
+    
+    // Tín dụng liên kết
+    const creditArea = document.getElementById('u-credit-area');
+    if(d.hmTD > 0) {
+        creditArea.style.display = 'block';
+        document.getElementById('u-credit-available').textContent = Number(d.hmTD - d.noTD).toLocaleString() + ' VND';
+        document.getElementById('u-credit-limit').textContent = Number(d.hmTD).toLocaleString();
+        document.getElementById('u-credit-debt').textContent = Number(d.noTD).toLocaleString();
+        document.getElementById('t-source-group').style.display = 'block';
+    } else {
+        creditArea.style.display = 'none';
+        document.getElementById('t-source-group').style.display = 'none';
+        document.getElementById('t-source').value = 'main';
+    }
+
     const b=document.getElementById('u-rank-badge'); b.textContent=d.hang; b.className='badge badge-'+d.hang.replace(/\s/g,'');
 }
 
 async function doTransact(){
-    const t=document.getElementById('t-type').value, a=document.getElementById('t-amt').value, p=document.getElementById('t-pin').value, d=document.getElementById('t-dest').value;
-    const res=await api('/api/user/transact', {stk:session.stk, type:t, amount:a, pin:p, dest:d});
+    const t=document.getElementById('t-type').value, a=document.getElementById('t-amt').value, p=document.getElementById('t-pin').value, d=document.getElementById('t-dest').value, s=document.getElementById('t-source').value;
+    const res=await api('/api/user/transact', {stk:session.stk, type:t, amount:a, pin:p, dest:d, source:s});
     if(res.status==='success'){ showToast('Thành công'); refreshUser(); } else showToast(res.msg, true);
+}
+
+async function doRequestCredit(){
+    if(!confirm('Bạn muốn gửi yêu cầu mở thẻ tín dụng liên kết (Hạn mức 20,000,000 VND)?')) return;
+    const res = await api('/api/user/request_credit', {stk:session.stk});
+    if(res.status==='success') showToast('Đã gửi yêu cầu mở thẻ'); else showToast('Lỗi', true);
 }
 
 async function doRequestLoan(){
@@ -556,6 +590,7 @@ async function loadRequests(){
         let content = r.val; let badgeClass = 'badge-VIP';
         if(r.type === 'LOAN') { content = Number(r.val).toLocaleString() + ' VND (Hạn: ' + r.hang + ' phút)'; badgeClass = 'badge-TinDung'; }
         else if(r.type === 'UPGRADE') content = 'Nâng hạng: ' + r.val;
+        else if(r.type === 'CREDIT') { content = 'Mở thẻ tín dụng (Hạn mức: ' + Number(r.val).toLocaleString() + ')'; badgeClass = 'badge-TinDung'; }
         else if(r.type === 'RESET_PIN') { content = 'Cấp lại mã PIN'; badgeClass = 'badge-TietKiem'; }
         return `<tr><td><span class="badge ${badgeClass}">${r.type}</span></td><td>${r.stk}</td><td>${r.name}</td><td>${content}</td><td>${r.time}</td><td><button class="btn-xs btn-success" onclick="approveRequest('${r.stk}', '${r.type}', '${r.val}', '${r.hang}')">Duyệt</button></td></tr>`
     }).join('') || '<tr><td colspan="6" style="text-align:center">Trống</td></tr>';
