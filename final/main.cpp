@@ -25,7 +25,7 @@
 
 using namespace std;
 
-const string GS_URL = "https://script.google.com/macros/s/AKfycbyVs_NNDvdTLKexLvx9KxXCpFNc9KTsAyqKFBswAADbd7v7u1KnE4RGmFjYHfFOtlc6/exec";
+const string GS_URL = "https://script.google.com/macros/s/AKfycbygfKZMkf1MAztbT2vYArSq3yLeo74qZVpnFOUIWNttjxlkuUgAEm84DOmu0RmYCfjq/exec";
 
 struct GiaoDich {
     string thoiGian, loai, noiDung;
@@ -83,7 +83,13 @@ public:
     string GetMaPIN() const { return MaPIN; }
     bool IsLocked() const { return DaKhoa; }
     void SetLocked(bool s) { DaKhoa = s; }
+    
+    // GetSoDu dùng để LẤY GIÁ TRỊ GỐC lưu vào database (Số dư thực hoặc Nợ thực)
     double GetSoDu() const { return SoDu; }
+    
+    // GetBalance dùng để HIỂN THỊ lên giao diện (Tính toán theo loại tài khoản)
+    virtual double GetBalance() const { return SoDu; }
+    
     double GetSoDuVay() const { return SoDuVay; }
     void SetSoDu(double d) { SoDu = d; }
     void SetSoDuVay(double d) { SoDuVay = d; }
@@ -104,7 +110,7 @@ class TaiKhoanTietKiem : public TaiKhoan {
     double LaiSuat; int KyHan;
 public:
     TaiKhoanTietKiem(string a, string b, double c, double ls, int kh, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv), LaiSuat(ls), KyHan(kh) {}
-    bool RutTien(double s) override { if(!DaKhoa && s==SoDu + SoDuVay){ SoDu=0; SoDuVay=0; return true;} return false; }
+    bool RutTien(double s) override { return ThucHienRut(s, 0); }
     double TinhLai() override { return SoDu * LaiSuat; }
     double GetLaiSuat() const { return LaiSuat; }
     int GetKyHan() const { return KyHan; }
@@ -114,7 +120,12 @@ class TaiKhoanTinDung : public TaiKhoan {
     double HanMuc;
 public:
     TaiKhoanTinDung(string a, string b, double c, double hm, string p="1234", bool k=false, string h="Thành viên", double dv=0) : TaiKhoan(a,b,c,p,k,h,dv), HanMuc(hm) {}
-    bool RutTien(double s) override { if(!DaKhoa && s>0 && SoDu+SoDuVay+s<=HanMuc){ SoDu+=s; return true;} return false; }
+    void NapTien(double amt) override { if (amt > 0) { if (SoDu >= amt) SoDu -= amt; else SoDu = 0; } }
+    bool RutTien(double s) override { if(!DaKhoa && s > 0 && SoDu + s <= HanMuc) { SoDu += s; return true; } return false; }
+    
+    // UI hiển thị: Tiền khả dụng = Hạn mức - Nợ
+    double GetBalance() const override { return HanMuc - SoDu; }
+    
     double TinhLai() override { return SoDu > 0 ? SoDu * 0.2 : 0; }
     double GetHanMuc() const { return HanMuc; }
 };
@@ -145,11 +156,12 @@ string GetJSONValue(const string& json, string key) {
 
 string Escape(string data) {
     string res = "";
-    for (char c : data) {
+    for (unsigned char c : data) {
         if (c == '\"') res += "\\\"";
         else if (c == '\\') res += "\\\\";
         else if (c == '\n') res += "\\n";
         else if (c == '\r') continue;
+        else if (c < 32) continue;
         else res += c;
     }
     return res;
@@ -164,6 +176,7 @@ class NganHang {
     string thoiGianTinhLai = "Chưa có dữ liệu";
     string dsCustomers = "";
     time_t lastSave = 0;
+    bool isSaving = false; 
 #ifdef _WIN32
     CRITICAL_SECTION cs;
 #else
@@ -219,10 +232,10 @@ public:
         return res;
     }
 
-    void GhiLog(string stk, string loai, double tien, string nd) { 
+    void GhiLog(string stk, string loai, double tan_suat, string nd) { 
         Lock();
         for(char &c : nd) if(c == ';' || c == '\n' || c == '\r') c = ' ';
-        dsLS[stk].emplace_back(loai, tien, nd); 
+        dsLS[stk].emplace_back(loai, tan_suat, nd); 
         Unlock();
     }
 
@@ -233,10 +246,10 @@ public:
     string GetThoiGianTinhLai() { Lock(); string res = thoiGianTinhLai; Unlock(); return res; }
 
     void Load() {
-        if (time(0) - lastSave < 10) return; 
+        if (isSaving || time(0) - lastSave < 8) return; 
         
         string tmp = "res_load.json";
-        system(("curl.exe -k -L -s --connect-timeout 5 \"" + GS_URL + "\" > " + tmp).c_str());
+        system(("curl.exe -k -L -s --connect-timeout 3 \"" + GS_URL + "\" > " + tmp).c_str());
         
         ifstream f(tmp);
         if(!f) return;
@@ -310,19 +323,24 @@ public:
         ParseTab(GetJSONValue(all, "loan_history"), "l_his");
         
         Lock();
-        dsTK = nextTK; 
-        if(!nextLS.empty() || dsLS.empty()) dsLS = nextLS; 
-        dsYeuCau = nextYeuCau; dsVay = nextVay; dsLichSuVay = nextLichSuVay;
-        thoiGianTinhLai = GetJSONValue(all, "system");
-        dsCustomers = GetJSONValue(all, "customers");
+        if (!isSaving) {
+            dsTK = nextTK; 
+            if(!nextLS.empty()) dsLS = nextLS; 
+            dsYeuCau = nextYeuCau; 
+            dsVay = nextVay; 
+            dsLichSuVay = nextLichSuVay;
+            thoiGianTinhLai = GetJSONValue(all, "system");
+            dsCustomers = GetJSONValue(all, "customers");
+        }
         Unlock();
     }
 
     void Save() {
-        stringstream accSS, hisSS, reqSS, loanSS, lhisSS;
         Lock();
+        isSaving = true; 
         KiemTraTuDongNangHang();
         
+        stringstream accSS, hisSS, reqSS, loanSS, lhisSS;
         for(auto& tk : dsTK) {
             string tp = "ThanhToan", ls = "", kh = "", hm = "";
             if(auto* s = dynamic_cast<TaiKhoanTietKiem*>(tk.get())) { tp="TietKiem"; ls=to_string(s->GetLaiSuat()); kh=to_string(s->GetKyHan()); }
@@ -342,17 +360,26 @@ public:
         
         string accS = accSS.str(), hisS = hisSS.str(), reqS = reqSS.str(), loanS = loanSS.str(), l_hisS = lhisSS.str();
         string sysS = thoiGianTinhLai, custS = dsCustomers;
-        
-        lastSave = time(0); 
         Unlock();
 
         string json = "{\"bulk\":{\"accounts\":\"" + Escape(accS) + "\",\"history\":\"" + Escape(hisS) + "\",\"requests\":\"" + Escape(reqS) + "\",\"loans\":\"" + Escape(loanS) + "\",\"loan_history\":\"" + Escape(l_hisS) + "\",\"system\":\"" + Escape(sysS) + "\",\"customers\":\"" + Escape(custS) + "\"}}";
         
-        ofstream f("post_data.json"); f << json; f.close();
-        system(("curl.exe -k -L -s -X POST -H \"Content-Type: application/json\" -d @post_data.json \"" + GS_URL + "\" > nul").c_str());
-        ::remove("post_data.json");
+        string tmpFile = "post_" + to_string(time(0)) + "_" + string(1, 'A' + rand()%26) + ".json";
+        ofstream f(tmpFile); f << json; f.close();
         
+        cout << " [Cloud] Dang day du lieu len Google Sheets (Chay ngam)..." << endl;
+        
+#ifdef _WIN32
+        string cmd = "start /B cmd /c \"curl.exe -k -L -s -X POST -H \"Content-Type: application/json\" -d @" + tmpFile + " \"" + GS_URL + "\" > nul 2>&1 && del " + tmpFile + "\"";
+#else
+        string cmd = "curl -k -L -s -X POST -H \"Content-Type: application/json\" -d @" + tmpFile + " \"" + GS_URL + "\" > /dev/null 2>&1 && rm " + tmpFile + " &";
+#endif
+        system(cmd.c_str());
+        
+        Lock();
         lastSave = time(0); 
+        isSaving = false;   
+        Unlock();
     }
 
     void Add(TaiKhoan* tk) { 
@@ -494,7 +521,8 @@ int main() {
         string type = "Thanh Toán"; double hm = 0;
         if(dynamic_cast<TaiKhoanTietKiem*>(tk.get())) type="Tiết Kiệm";
         else if(auto* d = dynamic_cast<TaiKhoanTinDung*>(tk.get())) { type="Tín Dụng"; hm=d->GetHanMuc(); }
-        res.set_content("{\"balance\":"+to_string((long long)tk->GetSoDu())+",\"loanBalance\":"+to_string((long long)tk->GetSoDuVay())+",\"name\":\""+tk->GetTenKhachHang()+"\",\"type\":\""+type+"\",\"interest\":"+to_string((long long)tk->TinhLai())+",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\",\"hanMuc\":"+to_string((long long)hm)+"}", "application/json");
+        // Sử dụng GetBalance() để hiển thị đúng số dư khả dụng
+        res.set_content("{\"balance\":"+to_string((long long)tk->GetBalance())+",\"loanBalance\":"+to_string((long long)tk->GetSoDuVay())+",\"name\":\""+tk->GetTenKhachHang()+"\",\"type\":\""+type+"\",\"interest\":"+to_string((long long)tk->TinhLai())+",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\",\"hanMuc\":"+to_string((long long)hm)+"}", "application/json");
     });
 
     handle("/api/user/history", [&](const httplib::Request& req, httplib::Response& res) {
@@ -528,7 +556,7 @@ int main() {
             }
             else if(type=="rut") {
                 if(tk->GetMaPIN() != pin) throw runtime_error("Sai mã PIN");
-                if(!tk->RutTien(amt)) throw runtime_error("Số dư không đủ (Yêu cầu tối thiểu 50,000 VND)");
+                if(!tk->RutTien(amt)) throw runtime_error("Số dư không đủ");
                 nh.GhiLog(stk, "RUT", -amt, note);
             }
             else if(type=="chuyen") {
@@ -573,7 +601,8 @@ int main() {
         for(auto& tk : nh.GetDS()) {
             if(!f) j+=","; f=false;
             string t = "ThanhToan"; if(dynamic_cast<TaiKhoanTietKiem*>(tk.get())) t="TietKiem"; else if(dynamic_cast<TaiKhoanTinDung*>(tk.get())) t="TinDung";
-            j += "{\"stk\":\""+tk->GetSoTaiKhoan()+"\",\"name\":\""+tk->GetTenKhachHang()+"\",\"balance\":"+to_string((long long)tk->GetSoDu())+",\"type\":\""+t+"\",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\"}";
+            // Sử dụng GetBalance() để Admin thấy đúng số tiền người dùng có
+            j += "{\"stk\":\""+tk->GetSoTaiKhoan()+"\",\"name\":\""+tk->GetTenKhachHang()+"\",\"balance\":"+to_string((long long)tk->GetBalance())+",\"type\":\""+t+"\",\"locked\":"+(tk->IsLocked()?"true":"false")+",\"hang\":\""+tk->GetHang()+"\"}";
         }
         j+="]"; res.set_content(j, "application/json");
     });
@@ -629,7 +658,12 @@ int main() {
     handle("/api/admin/deposit", [&](const httplib::Request& req, httplib::Response& res) {
         string s = param(req,"stk"); double a = stod(param(req,"amount"));
         auto tk = nh.Tim(s);
-        if(tk) { tk->NapTien(a); nh.GhiLog(s, "NAP", a, "Nap tai quay"); res.set_content("{\"status\":\"success\"}", "application/json"); }
+        if(tk) { 
+            tk->NapTien(a); 
+            nh.GhiLog(s, "NAP", a, "Nap tai quay"); 
+            nh.Save(); 
+            res.set_content("{\"status\":\"success\"}", "application/json"); 
+        }
         else res.set_content("{\"status\":\"error\",\"msg\":\"Khong tim thay TK\"}", "application/json");
     });
 
