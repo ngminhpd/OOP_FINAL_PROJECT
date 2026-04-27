@@ -263,7 +263,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             <h1>Quản lý các khoản vay hiện có</h1>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
-                    <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Gốc</th><th>Lãi suất</th><th>Thời gian còn lại</th></tr></thead>
+                    <thead><tr><th>Số TK</th><th>Khách hàng</th><th>Gốc</th><th>Lãi suất</th><th>Tổng cộng</th><th>Thời gian còn lại</th></tr></thead>
                     <tbody id="admin-loan-tbody"></tbody>
                 </table>
             </div>
@@ -388,6 +388,12 @@ function updateAmtText(val, displayId) {
 
 function formatTimer(sec) {
     if(sec <= 0) return "<span style='color:red; font-weight:bold'>HẾT HẠN</span>";
+    if (sec > 86400) {
+        const months = Math.floor(sec / (30 * 24 * 3600));
+        const days = Math.floor((sec % (30 * 24 * 3600)) / (24 * 3600));
+        const hours = Math.floor((sec % (24 * 3600)) / 3600);
+        return `${months} tháng - ${days} ngày - ${hours} giờ`;
+    }
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
@@ -527,7 +533,7 @@ async function loadAdmin(){
 async function loadAdminLoans(){
     const data = await api('/api/admin/loans'); const tbody = document.getElementById('admin-loan-tbody');
     if(adminLoanInterval) clearInterval(adminLoanInterval);
-    const render = () => { tbody.innerHTML = data.map(v => `<tr><td>${v.stk}</td><td>${v.name}</td><td>${Number(v.amount).toLocaleString()} VND</td><td>${(v.interestRate*100).toFixed(1)}%</td><td id="admin-loan-timer-${v.stk}">${formatTimer(v.remaining)}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center">Không có khoản vay nào</td></tr>'; };
+    const render = () => { tbody.innerHTML = data.map(v => `<tr><td>${v.stk}</td><td>${v.name}</td><td>${Number(v.amount).toLocaleString()} VND</td><td>${(v.interestRate*100).toFixed(1)}%</td><td>${Number(v.totalDue).toLocaleString()} VND</td><td id="admin-loan-timer-${v.stk}">${formatTimer(v.remaining)}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center">Không có khoản vay nào</td></tr>'; };
     render();
     adminLoanInterval = setInterval(() => { data.forEach(v => { v.remaining--; const el = document.getElementById(`admin-loan-timer-${v.stk}`); if(el) el.innerHTML = formatTimer(v.remaining); }); }, 1000);
 }

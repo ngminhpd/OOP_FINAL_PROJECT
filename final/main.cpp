@@ -394,7 +394,13 @@ public:
         Unlock();
         Save();
     }
-    void AddVay(string stk, double amt, int phut, double ls = 0.05) {
+    void AddVay(string stk, double amt, int phut) {
+        double ls = 0.05; // Mặc định
+        if (amt < 1000000) ls = 0.04;
+        else if (amt < 10000000) ls = 0.045;
+        else if (amt < 100000000) ls = 0.05;
+        else ls = 0.06;
+
         time_t now = time(0);
         Lock();
         dsVay.emplace_back(stk, amt, (long long)now + phut * 60, ls);
@@ -617,7 +623,7 @@ int main() {
         string j = "["; bool f = true; long long now = (long long)time(0);
         for(auto& v : nh.GetDSVay()) {
             auto tk_ptr = nh.Tim(v.stk); if(!f) j+=","; f=false;
-            j += "{\"stk\":\""+v.stk+"\",\"name\":\""+(tk_ptr?tk_ptr->GetTenKhachHang():"---")+"\",\"amount\":"+to_string((long long)v.soTien)+",\"interestRate\":"+to_string(v.laiSuat)+",\"remaining\":"+to_string(v.hanTra - now)+"}";
+            j += "{\"stk\":\""+v.stk+"\",\"name\":\""+(tk_ptr?tk_ptr->GetTenKhachHang():"---")+"\",\"amount\":"+to_string((long long)v.soTien)+",\"interestRate\":"+to_string(v.laiSuat)+",\"totalDue\":"+to_string((long long)(v.soTien*(1+v.laiSuat)))+",\"remaining\":"+to_string(v.hanTra - now)+"}";
         }
         j+="]"; res.set_content(j, "application/json");
     });
