@@ -233,7 +233,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
             
             <div id="u-credit-request-area" class="login-card" style="max-width:400px; margin-top:1.5rem">
                 <h3>Thẻ tín dụng liên kết</h3>
-                <p style="font-size:0.85rem; color:var(--muted); margin-top:0.5rem; margin-bottom:1rem">Mở thẻ tín dụng liên kết với tài khoản hiện tại. Hạn mức mặc định 20,000,000 VND.</p>
+                <p id="u-credit-desc" style="font-size:0.85rem; color:var(--muted); margin-top:0.5rem; margin-bottom:1rem">Mở thẻ tín dụng liên kết với tài khoản hiện tại. Hạn mức mặc định 20,000,000 VND.</p>
                 <button class="btn-primary" style="background:var(--accent)" onclick="doRequestCredit()">Yêu cầu mở thẻ ngay</button>
             </div>
         </section>
@@ -476,6 +476,14 @@ async function refreshUser(){
     document.getElementById('u-limit-card').style.display=d.type==='Tín Dụng'?'block':'none';
     if(d.type==='Tín Dụng') document.getElementById('u-limit').textContent=Number(d.hanMuc).toLocaleString()+' VND';
     
+    // Cập nhật mô tả hạn mức theo hạng
+    let descLimit = "20,000,000";
+    if(d.hang === "VIP") descLimit = "40,000,000";
+    else if(d.hang === "Signature") descLimit = "60,000,000";
+    else if(d.hang === "Private") descLimit = "100,000,000";
+    const descEl = document.getElementById('u-credit-desc');
+    if(descEl) descEl.textContent = `Mở thẻ tín dụng liên kết với tài khoản hiện tại. Hạn mức thẻ cho hạng ${d.hang} là ${descLimit} VND.`;
+
     // Tín dụng liên kết
     const creditArea = document.getElementById('u-credit-area');
     if(d.hmTD > 0) {
@@ -500,7 +508,13 @@ async function doTransact(){
 }
 
 async function doRequestCredit(){
-    if(!confirm('Bạn muốn gửi yêu cầu mở thẻ tín dụng liên kết (Hạn mức 20,000,000 VND)?')) return;
+    const d = await api('/api/user/info?stk=' + session.stk);
+    let limit = "20,000,000";
+    if(d.hang === "VIP") limit = "40,000,000";
+    else if(d.hang === "Signature") limit = "60,000,000";
+    else if(d.hang === "Private") limit = "100,000,000";
+
+    if(!confirm(`Bạn muốn gửi yêu cầu mở thẻ tín dụng liên kết?\nHạng hiện tại: ${d.hang}\nHạn mức dự kiến: ${limit} VND`)) return;
     const res = await api('/api/user/request_credit', {stk:session.stk});
     if(res.status==='success') showToast('Đã gửi yêu cầu mở thẻ'); else showToast('Lỗi', true);
 }
@@ -592,13 +606,19 @@ async function loadRequests(){
         else if(r.type === 'UPGRADE') content = 'Nâng hạng: ' + r.val;
         else if(r.type === 'CREDIT') { content = 'Mở thẻ tín dụng (Hạn mức: ' + Number(r.val).toLocaleString() + ')'; badgeClass = 'badge-TinDung'; }
         else if(r.type === 'RESET_PIN') { content = 'Cấp lại mã PIN'; badgeClass = 'badge-TietKiem'; }
-        return `<tr><td><span class="badge ${badgeClass}">${r.type}</span></td><td>${r.stk}</td><td>${r.name}</td><td>${content}</td><td>${r.time}</td><td><button class="btn-xs btn-success" onclick="approveRequest('${r.stk}', '${r.type}', '${r.val}', '${r.hang}')">Duyệt</button></td></tr>`
+        return `<tr><td><span class="badge ${badgeClass}">${r.type}</span></td><td>${r.stk}</td><td>${r.name}</td><td>${content}</td><td>${r.time}</td><td><button class="btn-xs btn-success" onclick="approveRequest('${r.stk}', '${r.type}', '${r.val}', '${r.hang}')">Duyệt</button><button class="btn-xs btn-danger" style="width:auto; margin-left:5px" onclick="rejectRequest('${r.stk}', '${r.type}')">Từ chối</button></td></tr>`
     }).join('') || '<tr><td colspan="6" style="text-align:center">Trống</td></tr>';
 }
 
 async function approveRequest(stk, type, val, hang){
     const res = await api('/api/admin/approve_request', {stk, type, val, hang});
     if(res.status==='success'){ showToast('Đã duyệt yêu cầu'); loadRequests(); } else showToast(res.msg, true);
+}
+
+async function rejectRequest(stk, type){
+    if(!confirm('Từ chối yêu cầu này?')) return;
+    const res = await api('/api/admin/reject_request', {stk, type});
+    if(res.status==='success'){ showToast('Đã từ chối yêu cầu'); loadRequests(); } else showToast(res.msg, true);
 }
 
 async function doAdminDeposit(){

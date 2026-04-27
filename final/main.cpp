@@ -612,7 +612,22 @@ int main() {
     });
 
     handle("/api/user/request_credit", [&](const httplib::Request& req, httplib::Response& res) {
-        nh.AddYeuCau(YeuCau("CREDIT", param(req,"stk"), "", "20000000", "Mở thẻ tín dụng"));
+        auto tk = nh.Tim(param(req,"stk"));
+        if(!tk) { res.set_content("{\"status\":\"error\",\"msg\":\"Tài khoản không tồn tại\"}", "application/json"); return; }
+        
+        string h = tk->GetHang();
+        long long limit = 20000000;
+        if(h == "VIP") limit = 40000000;
+        else if(h == "Signature") limit = 60000000;
+        else if(h == "Private") limit = 100000000;
+
+        nh.AddYeuCau(YeuCau("CREDIT", tk->GetSoTaiKhoan(), "", to_string(limit), "Mở thẻ tín dụng hạng " + h));
+        res.set_content("{\"status\":\"success\"}", "application/json");
+    });
+
+    handle("/api/admin/reject_request", [&](const httplib::Request& req, httplib::Response& res) {
+        nh.XoaYeuCau(param(req, "stk"), param(req, "type"));
+        nh.Save();
         res.set_content("{\"status\":\"success\"}", "application/json");
     });
 
