@@ -151,7 +151,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         <section id="s-home" class="section">
             <h1>Chào mừng <span id="u-rank-badge" class="badge"></span></h1>
             <div class="balance-card" style="margin-top: 1rem;">
-                <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">SỐ DƯ HIỆN TẠI</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin-bottom:0.5rem">SỐ DƯ HIỆN TẠI</div>
+                    <button onclick="refreshUser()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">🔄 Reset</button>
+                </div>
                 <div id="u-balance" class="balance-amount">0 VND</div>
                 <div id="u-balance-text" style="font-size:0.85rem; color:rgba(255,255,255,0.8); margin-top:0.3rem; font-style:italic"></div>
                 <div id="u-loan-balance-display" style="font-size:0.9rem; color:var(--warning); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:0.5rem; display:none"></div>
@@ -253,7 +256,10 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         </section>
 
         <section id="a-accounts" class="section" style="display:none">
-            <h1>Quản lý tất cả tài khoản</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>Quản lý tất cả tài khoản</h1>
+                <button onclick="loadAdmin()" style="background: var(--surface2); border: 1px solid var(--border); color: var(--primary); border-radius: 6px; padding: 5px 12px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor=var(--primary)" onmouseout="this.style.borderColor=var(--border)">🔄 Reset</button>
+            </div>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
                     <thead><tr><th>Loại TK</th><th>Số TK</th><th>Họ tên</th><th>Số dư</th><th>Hạng</th><th>Thao tác</th></tr></thead>

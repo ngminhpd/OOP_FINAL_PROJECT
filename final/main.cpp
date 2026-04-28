@@ -574,6 +574,7 @@ int main() {
             if(amt <= 0) throw runtime_error("Số tiền phải lớn hơn 0");
 
             if(type=="nap") {
+                if(tk->GetMaPIN() != pin) throw runtime_error("Sai mã PIN");
                 if(source == "credit") {
                     tk->NapTienTinDung(amt);
                     nh.GhiLog(stk, "TRA_NO_TD", amt, "Thanh toán nợ tín dụng");
