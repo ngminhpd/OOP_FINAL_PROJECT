@@ -182,6 +182,12 @@ string Escape(string data) {
     return res;
 }
 
+// Định nghĩa lãi suất cố định
+const double LAI_SUAT_DUOI_1M = 0.04;
+const double LAI_SUAT_DUOI_10M = 0.045;
+const double LAI_SUAT_DUOI_100M = 0.05;
+const double LAI_SUAT_MAC_DINH = 0.06;
+
 class NganHang {
     vector<shared_ptr<TaiKhoan>> dsTK;
     map<string, vector<GiaoDich>> dsLS;
@@ -322,12 +328,27 @@ public:
                     string s, a, h, ls;
                     getline(row,s,';'); getline(row,a,';'); getline(row,h,';'); getline(row,ls,';');
                     Clean(s);
-                    if(!s.empty()) try { nextVay.emplace_back(s, stod(a), stoll(h), stod(ls)); } catch(...) {}
+                    if(!s.empty()) try { 
+                        double amt = stod(a);
+                        // Tự động tính lại lãi suất đúng theo hằng số để sửa dữ liệu lỗi
+                        double correct_ls = LAI_SUAT_MAC_DINH;
+                        if (amt < 1000000) correct_ls = LAI_SUAT_DUOI_1M;
+                        else if (amt < 10000000) correct_ls = LAI_SUAT_DUOI_10M;
+                        else if (amt < 100000000) correct_ls = LAI_SUAT_DUOI_100M;
+                        nextVay.emplace_back(s, amt, stoll(h), correct_ls); 
+                    } catch(...) {}
                 } else if(mode=="l_his") {
                     string s, n, tg, hv, st, ls, tt;
                     getline(row,s,';'); getline(row,n,';'); getline(row,tg,';'); getline(row,hv,';'); getline(row,st,';'); getline(row,ls,';'); getline(row,tt,';');
                     Clean(s);
-                    if(!s.empty()) try { nextLichSuVay.emplace_back(s, n, tg, hv, stod(st), stod(ls), tt); } catch(...) {}
+                    if(!s.empty()) try { 
+                        double amt = stod(st);
+                        double correct_ls = LAI_SUAT_MAC_DINH;
+                        if (amt < 1000000) correct_ls = LAI_SUAT_DUOI_1M;
+                        else if (amt < 10000000) correct_ls = LAI_SUAT_DUOI_10M;
+                        else if (amt < 100000000) correct_ls = LAI_SUAT_DUOI_100M;
+                        nextLichSuVay.emplace_back(s, n, tg, hv, amt, correct_ls, tt); 
+                    } catch(...) {}
                 }
             }
         };
@@ -372,8 +393,14 @@ public:
         }
 
         for(auto& r : dsYeuCau) reqSS << r.type << ";'" << r.stk << ";" << r.ten << ";" << r.val << ";" << r.hang << ";'" << r.pin << ";" << r.thoiGian << "\n";
-        for(auto& v : dsVay) loanSS << "'" << v.stk << ";" << fixed << setprecision(0) << v.soTien << ";" << v.hanTra << ";" << v.laiSuat << "\n";
-        for(auto& l : dsLichSuVay) lhisSS << "'" << l.stk << ";" << l.ten << ";" << l.thoiGian << ";" << l.hanVay << ";" << fixed << setprecision(0) << l.soTien << ";" << l.laiSuat << ";" << l.trangThai << "\n";
+        
+        // Sửa lỗi làm tròn lãi suất vay
+        for(auto& v : dsVay) {
+            loanSS << "'" << v.stk << ";" << fixed << setprecision(0) << v.soTien << ";" << v.hanTra << ";" << fixed << setprecision(4) << v.laiSuat << "\n";
+        }
+        for(auto& l : dsLichSuVay) {
+            lhisSS << "'" << l.stk << ";" << l.ten << ";" << l.thoiGian << ";" << l.hanVay << ";" << fixed << setprecision(0) << l.soTien << ";" << fixed << setprecision(4) << l.laiSuat << ";" << l.trangThai << "\n";
+        }
         
         string accS = accSS.str(), hisS = hisSS.str(), reqS = reqSS.str(), loanS = loanSS.str(), l_hisS = lhisSS.str();
         string sysS = thoiGianTinhLai, custS = dsCustomers;
@@ -405,25 +432,43 @@ public:
         Save(); 
     }
     void AddYeuCau(YeuCau y) { Lock(); dsYeuCau.push_back(y); Unlock(); Save(); }
+    
+    bool KiemTraVaXoaYeuCau(string stk, string type) {
+        Lock();
+        auto it = find_if(dsYeuCau.begin(), dsYeuCau.end(), [&](const YeuCau& r){ return r.stk == stk && r.type == type; });
+        if(it != dsYeuCau.end()) {
+            dsYeuCau.erase(it);
+            Unlock();
+            Save();
+            return true;
+        }
+        Unlock();
+        return false;
+    }
+
     void XoaYeuCau(string stk, string type) {
         Lock();
         dsYeuCau.erase(remove_if(dsYeuCau.begin(), dsYeuCau.end(), [&](const YeuCau& r){ return r.stk == stk && r.type == type; }), dsYeuCau.end());
         Unlock();
         Save();
     }
+
     void AddVay(string stk, double amt, int phut) {
-        double ls = 0.05; // Mặc định
-        if (amt < 1000000) ls = 0.04;
-        else if (amt < 10000000) ls = 0.045;
-        else if (amt < 100000000) ls = 0.05;
-        else ls = 0.06;
+        double ls = LAI_SUAT_MAC_DINH;
+        if (amt < 1000000) ls = LAI_SUAT_DUOI_1M;
+        else if (amt < 10000000) ls = LAI_SUAT_DUOI_10M;
+        else if (amt < 100000000) ls = LAI_SUAT_DUOI_100M;
 
         time_t now = time(0);
+        tm *ltm = localtime(&now); char buf[80];
+        strftime(buf, sizeof(buf), "%H:%M:%S %d/%m/%Y", ltm);
+        string timeStr = string(buf);
+
         Lock();
         dsVay.emplace_back(stk, amt, (long long)now + phut * 60, ls);
         for(auto& tk : dsTK) if(tk->GetSoTaiKhoan()==stk) { 
             tk->NapTienVay(amt); 
-            dsLichSuVay.emplace_back(stk, tk->GetTenKhachHang(), "Vừa xong", to_string(phut) + " phút", amt, ls, "Chưa trả"); 
+            dsLichSuVay.emplace_back(stk, tk->GetTenKhachHang(), timeStr, to_string(phut) + " phút", amt, ls, "Chưa trả"); 
             break; 
         }
         Unlock();
@@ -685,15 +730,22 @@ int main() {
 
     handle("/api/admin/approve_request", [&](const httplib::Request& req, httplib::Response& res) {
         string stk = param(req, "stk"), type = param(req, "type"), val = param(req, "val"), hang = param(req, "hang");
+
+        // Kiểm tra và xóa yêu cầu TRƯỚC khi xử lý để tránh duyệt 2 lần
+        if(!nh.KiemTraVaXoaYeuCau(stk, type)) {
+            res.set_content("{\"status\":\"error\",\"msg\":\"Yêu cầu không tồn tại hoặc đã được xử lý\"}", "application/json");
+            return;
+        }
+
         auto tk = nh.Tim(stk);
         if(tk) {
             if(type=="LOAN") { double a = stod(val); int p = stoi(hang); tk->NapTien(a); nh.AddVay(stk, a, p); }
-            else if(type=="UPGRADE") tk->SetHang(val);
-            else if(type=="CREDIT") { tk->SetHanMucTinDung(stod(val)); tk->SetNoTinDung(0); }
-            else if(type=="RESET_PIN") tk->SetMaPIN("1234");
-            
-            nh.XoaYeuCau(stk, type); res.set_content("{\"status\":\"success\"}", "application/json");
-        } else res.set_content("{\"status\":\"error\"}", "application/json");
+            else if(type=="UPGRADE") { tk->SetHang(val); nh.Save(); }
+            else if(type=="CREDIT") { tk->SetHanMucTinDung(stod(val)); tk->SetNoTinDung(0); nh.Save(); }
+            else if(type=="RESET_PIN") { tk->SetMaPIN("1234"); nh.Save(); }
+
+            res.set_content("{\"status\":\"success\"}", "application/json");
+        } else res.set_content("{\"status\":\"error\",\"msg\":\"Tài khoản không tồn tại\"}", "application/json");
     });
 
     handle("/api/admin/lock", [&](const httplib::Request& req, httplib::Response& res) {
@@ -784,4 +836,5 @@ int main() {
     cout << "OOP BANK ONLINE: http://localhost:8080" << endl;
     svr.listen("0.0.0.0", 8080);
     return 0;
-}
+    }
+

@@ -612,19 +612,31 @@ async function loadRequests(){
         else if(r.type === 'UPGRADE') content = 'Nâng hạng: ' + r.val;
         else if(r.type === 'CREDIT') { content = 'Mở thẻ tín dụng (Hạn mức: ' + Number(r.val).toLocaleString() + ')'; badgeClass = 'badge-TinDung'; }
         else if(r.type === 'RESET_PIN') { content = 'Cấp lại mã PIN'; badgeClass = 'badge-TietKiem'; }
-        return `<tr><td><span class="badge ${badgeClass}">${r.type}</span></td><td>${r.stk}</td><td>${r.name}</td><td>${content}</td><td>${r.time}</td><td><button class="btn-xs btn-success" onclick="approveRequest('${r.stk}', '${r.type}', '${r.val}', '${r.hang}')">Duyệt</button><button class="btn-xs btn-danger" style="width:auto; margin-left:5px" onclick="rejectRequest('${r.stk}', '${r.type}')">Từ chối</button></td></tr>`
+        return `<tr><td><span class="badge ${badgeClass}">${r.type}</span></td><td>${r.stk}</td><td>${r.name}</td><td>${content}</td><td>${r.time}</td><td><button class="btn-xs btn-success" onclick="approveRequest('${r.stk}', '${r.type}', '${r.val}', '${r.hang}', this)">Duyệt</button><button class="btn-xs btn-danger" style="width:auto; margin-left:5px" onclick="rejectRequest('${r.stk}', '${r.type}', this)">Từ chối</button></td></tr>`
     }).join('') || '<tr><td colspan="6" style="text-align:center">Trống</td></tr>';
 }
 
-async function approveRequest(stk, type, val, hang){
-    const res = await api('/api/admin/approve_request', {stk, type, val, hang});
-    if(res.status==='success'){ showToast('Đã duyệt yêu cầu'); loadRequests(); } else showToast(res.msg, true);
+async function approveRequest(stk, type, val, hang, btn){
+    if(btn) { btn.disabled = true; btn.style.opacity = "0.5"; btn.textContent = "..."; }
+    try {
+        const res = await api('/api/admin/approve_request', {stk, type, val, hang});
+        if(res.status==='success'){ showToast('Đã duyệt yêu cầu'); loadRequests(); } else { showToast(res.msg, true); if(btn) { btn.disabled = false; btn.style.opacity = "1"; btn.textContent = "Duyệt"; } }
+    } catch(e) {
+        showToast("Lỗi kết nối", true);
+        if(btn) { btn.disabled = false; btn.style.opacity = "1"; btn.textContent = "Duyệt"; }
+    }
 }
 
-async function rejectRequest(stk, type){
+async function rejectRequest(stk, type, btn){
     if(!confirm('Từ chối yêu cầu này?')) return;
-    const res = await api('/api/admin/reject_request', {stk, type});
-    if(res.status==='success'){ showToast('Đã từ chối yêu cầu'); loadRequests(); } else showToast(res.msg, true);
+    if(btn) { btn.disabled = true; btn.style.opacity = "0.5"; btn.textContent = "..."; }
+    try {
+        const res = await api('/api/admin/reject_request', {stk, type});
+        if(res.status==='success'){ showToast('Đã từ chối yêu cầu'); loadRequests(); } else { showToast(res.msg, true); if(btn) { btn.disabled = false; btn.style.opacity = "1"; btn.textContent = "Từ chối"; } }
+    } catch(e) {
+        showToast("Lỗi kết nối", true);
+        if(btn) { btn.disabled = false; btn.style.opacity = "1"; btn.textContent = "Từ chối"; }
+    }
 }
 
 async function doAdminDeposit(){
