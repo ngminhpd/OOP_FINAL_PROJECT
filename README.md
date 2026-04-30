@@ -26,7 +26,8 @@ Huỳnh Tấn Đạt
 |  26/4/26  |       Hiển thị số dư khoản vay riêng biệt.     |   **Minh**        | Hoàn thành    | 43b79ac6c54e520a8bfceb7fb2bc22f582f56873    |
 |  27/4/26  |       Đọc và ghi data từ Google Sheets         |   **Đạt**         |               | ce1c32c5b6b8a8d866f8417c45ea95b810aaa6f7    |
 |  27/4/26  |       Sửa lỗi đọc và ghi lịch sử giao dịch     |   **Đạt**         |               | 9c9725bb0f06d37fa3622f65dd56a4f59740d357    |
-|           |                                                |                   |               |                                             |
+|  28/4/26  |           Fix: Cố định lãi suất vay            |   **Khang**       | Hoàn thành    | a6bc7ee8c9b3322a0093ce5bebe71027a1435bbe    |
+|  28/4/26  |Hiển thị thời gian thực và chống duyệt trùng lặp|   **Khang**       | Hoàn thành    | ...                                         |
 ## Nhiệm vụ
 1. **`feature/model`** Thiết kế hệ thống, class, đa hình  
     - TaiKhoan hoặc BankAccount là lớp cha
