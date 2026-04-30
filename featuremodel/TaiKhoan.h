@@ -1,75 +1,76 @@
 #pragma once
 #include <string>
+#include <vector>
 
-namespace BankManagementSystem {
+namespace Bank {
 namespace Models {
+    using namespace std;
 
-class TaiKhoan {
-protected:
-    std::string SoTaiKhoan;
-    std::string TenKhachHang;
-    std::string MaPIN; // Thuộc tính mới
-    double SoDu;
-    bool DaKhoa; // Thuộc tính mới
+    class TaiKhoan {
+    protected:
+        string SoTaiKhoan;
+        string TenKhachHang;
+        string MaPIN;
+        double SoDu;
+        bool DaKhoa;
 
-public:
-    TaiKhoan(std::string soTK, std::string tenKH, double soDu, std::string pin = "1234", bool khoa = false);
-    virtual ~TaiKhoan();
+    public:
+        TaiKhoan(string soTK, string tenKH, double soDu, string pin = "1234", bool khoa = false);
+        virtual ~TaiKhoan();
 
-    virtual void NapTien(double soTien);
-    virtual bool RutTien(double soTien) = 0;
-    virtual double TinhLai() = 0;
-    virtual double PhiDuyTri() = 0;
+        virtual void NapTien(double soTien);
+        virtual bool RutTien(double soTien) = 0;
+        virtual double TinhLai() = 0;
+        virtual double PhiDuyTri() = 0;
 
-    virtual std::string HienThiThongTin() const;
+        virtual string HienThiThongTin() const;
 
-    std::string GetSoTaiKhoan() const;
-    std::string GetTenKhachHang() const;
-    std::string GetMaPIN() const;
-    bool IsLocked() const { return DaKhoa; } // Getter
-    void SetLocked(bool status) { DaKhoa = status; } // Setter
-    double GetSoDu() const;
-    void SetTenKhachHang(std::string ten);
-    void SetMaPIN(std::string pin);
-};
+        string GetSoTaiKhoan() const { return SoTaiKhoan; }
+        string GetTenKhachHang() const { return TenKhachHang; }
+        string GetMaPIN() const { return MaPIN; }
+        bool IsLocked() const { return DaKhoa; }
+        void SetLocked(bool status) { DaKhoa = status; }
+        double GetSoDu() const { return SoDu; }
+        void SetTenKhachHang(string ten) { TenKhachHang = ten; }
+        void SetMaPIN(string pin) { MaPIN = pin; }
+    };
 
-class TaiKhoanThanhToan : public TaiKhoan {
-private:
-    const double PHI_DUY_TRI = 11000.0;
-public:
-    TaiKhoanThanhToan(std::string, std::string, double, std::string pin = "1234", bool khoa = false);
-    bool RutTien(double) override;
-    double TinhLai() override;
-    double PhiDuyTri() override;
-    std::string HienThiThongTin() const override;
-};
+    class TaiKhoanThanhToan : public TaiKhoan {
+    private:
+        const double PHI_DUY_TRI = 11000.0;
+    public:
+        TaiKhoanThanhToan(string stk, string ten, double du, string pin = "1234", bool khoa = false);
+        bool RutTien(double amt) override;
+        double TinhLai() override;
+        double PhiDuyTri() override;
+        string HienThiThongTin() const override;
+    };
 
-class TaiKhoanTietKiem : public TaiKhoan {
-private:
-    double LaiSuat;
-    int KyHan;
-public:
-    TaiKhoanTietKiem(std::string, std::string, double, double, int, std::string pin = "1234");
-    double GetLaiSuat() const;
-    int GetKyHan() const;
-    bool RutTien(double) override;
-    double TinhLai() override;
-    double PhiDuyTri() override;
-    std::string HienThiThongTin() const override;
-};
+    class TaiKhoanTietKiem : public TaiKhoan {
+    private:
+        double LaiSuat;
+        int KyHan;
+    public:
+        TaiKhoanTietKiem(string stk, string ten, double du, double ls, int kh, string pin = "1234");
+        double GetLaiSuat() const { return LaiSuat; }
+        int GetKyHan() const { return KyHan; }
+        bool RutTien(double amt) override;
+        double TinhLai() override;
+        double PhiDuyTri() override;
+        string HienThiThongTin() const override;
+    };
 
-class TaiKhoanTinDung : public TaiKhoan {
-private:
-    double HanMuc;
-    const double PHI = 50000.0;
-public:
-    TaiKhoanTinDung(std::string, std::string, double, double, std::string pin = "1234");
-    double GetHanMuc() const;
-    bool RutTien(double) override;
-    double TinhLai() override;
-    double PhiDuyTri() override;
-    std::string HienThiThongTin() const override;
-};
-
+    class TaiKhoanTinDung : public TaiKhoan {
+    private:
+        double HanMuc;
+        const double PHI = 50000.0;
+    public:
+        TaiKhoanTinDung(string stk, string ten, double du, double hm, string pin = "1234");
+        double GetHanMuc() const { return HanMuc; }
+        bool RutTien(double amt) override;
+        double TinhLai() override;
+        double PhiDuyTri() override;
+        string HienThiThongTin() const override;
+    };
 }
 }
