@@ -56,7 +56,6 @@ namespace httplib {
                         if (eq != string::npos) {
                             string key = item.substr(0, eq);
                             string val = item.substr(eq + 1);
-                            // Trim trailing \r or whitespace
                             while(!val.empty() && (val.back() == '\r' || val.back() == '\n' || val.back() == ' ')) val.pop_back();
                             req.params[key] = val;
                         }
