@@ -5,6 +5,7 @@ Nguyễn Hoàng Khang
 Nguyễn Minh Quân
 Huỳnh Tấn Đạt
 
+**Link data :** https://docs.google.com/spreadsheets/d/1EdgqO22H6GdpPnpEozES3phENnLuD6UGGv9CqJ6Ms8M/edit?gid=1846145429#gid=1846145429
 ## Lịch sử commit
 | Ngày      |                     Nội dung                   | Thành viên        | Xác nhận      | Ghi chú                                     |
 |-----------|------------------------------------------------|-------------------|---------------|---------------------------------------------|
