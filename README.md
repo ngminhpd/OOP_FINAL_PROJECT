@@ -29,6 +29,7 @@ Huỳnh Tấn Đạt
 |  28/4/26  |       Fix: lỗi không check PIN, mất nút RESET  |   **Quân**        | Hoàn thành    | 93c43d58bf1d2b527dcfb389e9c864b857056ee7    |
 |  28/4/26  |           Fix: Cố định lãi suất vay            |   **Khang**       | Hoàn thành    | a6bc7ee8c9b3322a0093ce5bebe71027a1435bbe    |
 |  28/4/26  |Hiển thị thời gian thực và chống duyệt trùng lặp|   **Khang**       | Hoàn thành    | ...                                         |
+|  01/5/26  |Chỉnh sủa lại 1 vài cấu trúc theo OOP và thêm test_script.py để tự động kiểm tra các chức năng của dự án|   **Đạt**         |               | 762ceb5001a14cd2879520517db8f80490c613ee    |
 ## Nhiệm vụ
 1. **`feature/model`** Thiết kế hệ thống, class, đa hình  
     - TaiKhoan hoặc BankAccount là lớp cha
