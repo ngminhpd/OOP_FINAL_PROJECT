@@ -54,12 +54,17 @@ public:
         cout << string(90, '=') << "\n";
     }
 
-    // 4. ComboBox: Chọn loại tài khoản
+    // 4. ComboBox: Chon tu danh sach
     static int ComboBox(string label, vector<string> items) {
-        cout << " [v] " << label << ":\n";
+        cout << "\n [v] " << label << ":\n";
         for (size_t i = 0; i < items.size(); ++i) cout << "     " << i + 1 << ". " << items[i] << "\n";
-        cout << " >> Chon (1-" << items.size() << "): ";
-        int c; cin >> c;
+        cout << " >> Chon (1-" << items.size() << ") hoac 0 de huy: ";
+        int c;
+        if (!(cin >> c)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            return -1;
+        }
         return c;
     }
 
