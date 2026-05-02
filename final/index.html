@@ -258,7 +258,7 @@ td { padding: .85rem 1rem; font-size: .9rem; border-top: 1px solid var(--border)
         <section id="a-accounts" class="section" style="display:none">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h1>Quản lý tất cả tài khoản</h1>
-                <button onclick="loadAdmin()" style="background: var(--surface2); border: 1px solid var(--border); color: var(--primary); border-radius: 6px; padding: 5px 12px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor=var(--primary)" onmouseout="this.style.borderColor=var(--border)">🔄 Reset</button>
+                <button onclick="loadAdmin()" style="background: var(--surface2); border: 1px solid var(--border); color: var(--primary); border-radius: 6px; padding: 5px 12px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">🔄 Reset</button>
             </div>
             <div class="table-wrapper" style="margin-top:1.5rem">
                 <table>
@@ -587,14 +587,37 @@ async function loadAdmin(){
 async function loadAdminLoans(){
     const data = await api('/api/admin/loans'); const tbody = document.getElementById('admin-loan-tbody');
     if(adminLoanInterval) clearInterval(adminLoanInterval);
-    const render = () => { tbody.innerHTML = data.map(v => `<tr><td>${v.stk}</td><td>${v.name}</td><td>${Number(v.amount).toLocaleString()} VND</td><td>${(v.interestRate*100).toFixed(1)}%</td><td>${Number(v.totalDue).toLocaleString()} VND</td><td id="admin-loan-timer-${v.stk}">${formatTimer(v.remaining)}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center">Không có khoản vay nào</td></tr>'; };
+    const render = () => { 
+        tbody.innerHTML = data.map(v => {
+            let rate = parseFloat(v.interestRate) || 0;
+            // Phòng vệ: Nếu lãi suất nhận được quá lớn (do lỗi dữ liệu cũ), giới hạn lại hiển thị
+            if (rate > 1) {
+                const amt = parseFloat(v.amount);
+                if (amt < 1000000) rate = 0.04;
+                else if (amt < 10000000) rate = 0.045;
+                else if (amt < 100000000) rate = 0.05;
+                else rate = 0.06;
+            }
+            return `<tr><td>${v.stk}</td><td>${v.name}</td><td>${Number(v.amount).toLocaleString()} VND</td><td>${(rate*100).toFixed(1)}%</td><td>${Number(v.totalDue).toLocaleString()} VND</td><td id="admin-loan-timer-${v.stk}">${formatTimer(v.remaining)}</td></tr>`;
+        }).join('') || '<tr><td colspan="6" style="text-align:center">Không có khoản vay nào</td></tr>'; 
+    };
     render();
     adminLoanInterval = setInterval(() => { data.forEach(v => { v.remaining--; const el = document.getElementById(`admin-loan-timer-${v.stk}`); if(el) el.innerHTML = formatTimer(v.remaining); }); }, 1000);
 }
 
 async function loadLoanHistory(){
     const data = await api('/api/admin/loan_history');
-    document.getElementById('loan-history-tbody').innerHTML = data.map(l => `<tr><td>${l.stk}</td><td>${l.name}</td><td>${Number(l.amount).toLocaleString()} VND</td><td>${(l.rate*100).toFixed(1)}%</td><td>${l.han}</td><td>${l.time}</td><td><span class="badge ${l.status==='Đã trả'?'badge-TietKiem':'badge-TinDung'}">${l.status}</span></td></tr>`).reverse().join('') || '<tr><td colspan="7" style="text-align:center">Chưa có dữ liệu</td></tr>';
+    document.getElementById('loan-history-tbody').innerHTML = data.map(l => {
+        let rate = parseFloat(l.rate) || 0;
+        if (rate > 1) {
+            const amt = parseFloat(l.amount);
+            if (amt < 1000000) rate = 0.04;
+            else if (amt < 10000000) rate = 0.045;
+            else if (amt < 100000000) rate = 0.05;
+            else rate = 0.06;
+        }
+        return `<tr><td>${l.stk}</td><td>${l.name}</td><td>${Number(l.amount).toLocaleString()} VND</td><td>${(rate*100).toFixed(1)}%</td><td>${l.han}</td><td>${l.time}</td><td><span class="badge ${l.status==='Đã trả'?'badge-TietKiem':'badge-TinDung'}">${l.status}</span></td></tr>`;
+    }).reverse().join('') || '<tr><td colspan="7" style="text-align:center">Chưa có dữ liệu</td></tr>';
 }
 
 function openUpgradeModal(stk){ document.getElementById('up-stk').value = stk; document.getElementById('upgrade-modal').style.display = 'flex'; }

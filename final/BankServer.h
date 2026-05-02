@@ -155,7 +155,12 @@ namespace BankSystem {
             handle("/api/user/loan_info", [this](const httplib::Request& req, httplib::Response& res) {
                 string stk = param(req, "stk"); long long now = (long long)time(0);
                 for (auto& v : nh.GetDSVay()) if (v.stk == stk) {
-                    res.set_content("{\"status\":\"active\",\"amount\":" + to_string((long long)v.soTien) + ",\"interestRate\":" + to_string(v.laiSuat) + ",\"totalDue\":" + to_string((long long)(v.soTien * (1 + v.laiSuat))) + ",\"remaining\":" + to_string(v.hanTra - now) + "}", "application/json");
+                    stringstream ss;
+                    ss << "{\"status\":\"active\",\"amount\":" << (long long)v.soTien 
+                       << ",\"interestRate\":" << fixed << setprecision(4) << v.laiSuat 
+                       << ",\"totalDue\":" << (long long)(v.soTien * (1 + v.laiSuat)) 
+                       << ",\"remaining\":" << (v.hanTra - now) << "}";
+                    res.set_content(ss.str(), "application/json");
                     return;
                 }
                 res.set_content("{\"status\":\"none\"}", "application/json");
@@ -240,14 +245,32 @@ namespace BankSystem {
                 string j = "["; bool f = true; long long now = (long long)time(0);
                 for (auto& v : nh.GetDSVay()) {
                     auto tk = nh.Tim(v.stk); if (!f) j += ","; f = false;
-                    j += "{\"stk\":\"" + v.stk + "\",\"name\":\"" + (tk ? tk->GetTenKhachHang() : "---") + "\",\"amount\":" + to_string((long long)v.soTien) + ",\"interestRate\":" + to_string(v.laiSuat) + ",\"totalDue\":" + to_string((long long)(v.soTien * (1 + v.laiSuat))) + ",\"remaining\":" + to_string(v.hanTra - now) + "}";
+                    stringstream ss;
+                    ss << "{\"stk\":\"" << v.stk 
+                       << "\",\"name\":\"" << (tk ? tk->GetTenKhachHang() : "---") 
+                       << "\",\"amount\":" << (long long)v.soTien 
+                       << ",\"interestRate\":" << fixed << setprecision(4) << v.laiSuat 
+                       << ",\"totalDue\":" << (long long)(v.soTien * (1 + v.laiSuat)) 
+                       << ",\"remaining\":" << (v.hanTra - now) << "}";
+                    j += ss.str();
                 }
                 j += "]"; res.set_content(j, "application/json");
             });
 
             handle("/api/admin/loan_history", [this](const httplib::Request&, httplib::Response& res) {
                 string j = "["; bool f = true;
-                for (auto& l : nh.GetLichSuVay()) { if (!f) j += ","; f = false; j += "{\"stk\":\"" + l.stk + "\",\"name\":\"" + l.ten + "\",\"amount\":" + to_string((long long)l.soTien) + ",\"rate\":" + to_string(l.laiSuat) + ",\"han\":\"" + l.hanVay + "\",\"time\":\"" + l.thoiGian + "\",\"status\":\"" + l.trangThai + "\"}"; }
+                for (auto& l : nh.GetLichSuVay()) { 
+                    if (!f) j += ","; f = false; 
+                    stringstream ss;
+                    ss << "{\"stk\":\"" << l.stk 
+                       << "\",\"name\":\"" << l.ten 
+                       << "\",\"amount\":" << (long long)l.soTien 
+                       << ",\"rate\":" << fixed << setprecision(4) << l.laiSuat 
+                       << ",\"han\":\"" << l.hanVay 
+                       << "\",\"time\":\"" << l.thoiGian 
+                       << "\",\"status\":\"" << l.trangThai << "\"}";
+                    j += ss.str();
+                }
                 j += "]"; res.set_content(j, "application/json");
             });
 
@@ -294,8 +317,10 @@ namespace BankSystem {
             });
         }
 
+        void Sync() { nh.Sync(); }
+
         void Listen(const string& host, int port) {
-            cout << "OOP BANK ONLINE: http://" << host << ":" << port << endl;
+            cout << "OOP BANK ONLINE: http://localhost:" << port << endl;
             svr.listen(host.c_str(), port);
         }
     };

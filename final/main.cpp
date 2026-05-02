@@ -29,7 +29,7 @@ public:
         BankApp* app = (BankApp*)p;
         while (app->running) {
             Sleep(5000);
-            app->manager.Load();
+            app->manager.Sync();
         }
         return 0;
     }

@@ -39,6 +39,7 @@ namespace BankSystem {
         pthread_mutex_t mtx;
 #endif
         atomic<bool> isSaving{false};
+        atomic<bool> dirty{false};
         time_t lastSave = 0;
 
         const string GS_URL = "https://script.google.com/macros/s/AKfycbygfKZMkf1MAztbT2vYArSq3yLeo74qZVpnFOUIWNttjxlkuUgAEm84DOmu0RmYCfjq/exec";
@@ -58,7 +59,7 @@ namespace BankSystem {
 #endif
         }
 
-        string Escape(string data) {
+        string JSON_Escape(string data) {
             string res = "";
             for (unsigned char c : data) {
                 if (c == '\"') res += "\\\"";
@@ -104,21 +105,22 @@ namespace BankSystem {
             s = s.substr(first, (last - first + 1));
         }
 
-        static unsigned __stdcall SaveThreadFunc(void* p) {
-            string* jsonPtr = (string*)p;
-            string json = *jsonPtr;
-            delete jsonPtr;
+        struct SaveContext { string json; BankManager* manager; };
 
-            string tmpFile = "post_" + to_string(time(0)) + ".json";
-            ofstream f(tmpFile); f << json; f.close();
-            
-            const string GS_URL = "https://script.google.com/macros/s/AKfycbygfKZMkf1MAztbT2vYArSq3yLeo74qZVpnFOUIWNttjxlkuUgAEm84DOmu0RmYCfjq/exec";
-            string cmd = "curl.exe -k -L -s -X POST -H \"Content-Type: application/json\" -d @" + tmpFile + " \"" + GS_URL + "\" > nul 2>&1 && del " + tmpFile;
+        static unsigned __stdcall SaveThreadFunc(void* p) {
+            SaveContext* ctx = (SaveContext*)p;
+            string tmpFile = "post_" + to_string(time(0)) + "_" + to_string(rand()) + ".json";
+            ofstream f(tmpFile); f << ctx->json; f.close();
+            string cmd = "curl.exe -k -L -s -X POST -H \"Content-Type: application/json\" -d @" + tmpFile + " \"" + ctx->manager->GS_URL + "\" > nul 2>&1 && del " + tmpFile;
             system(cmd.c_str());
+            ctx->manager->FinishSaving();
+            delete ctx;
             return 0;
         }
 
     public:
+        void FinishSaving() { isSaving = false; lastSave = time(0); }
+
         BankManager() {
 #ifdef _WIN32
             InitializeCriticalSection(&cs);
@@ -149,8 +151,11 @@ namespace BankSystem {
             Unlock();
         }
 
+        void SetDirty() { dirty = true; }
+
         void Load() {
-            if (isSaving || time(0) - lastSave < 5) return;
+            // Khong load neu dang luu hoac co du lieu moi trong RAM chua kip luu
+            if (isSaving || dirty || time(0) - lastSave < 5) return;
 
             string tmp = "res_load_" + to_string(time(0)) + ".json";
             string cmd = "curl.exe -k -L -s --connect-timeout 3 \"" + GS_URL + "\" > " + tmp;
@@ -206,7 +211,17 @@ namespace BankSystem {
                         string s, a, h, ls;
                         getline(row, s, ';'); getline(row, a, ';'); getline(row, h, ';'); getline(row, ls, ';');
                         CleanString(s);
-                        if (!s.empty()) try { nextVay.emplace_back(s, stod(a), stoll(h), stod(ls)); } catch (...) {}
+                        if (!s.empty()) try { 
+                            double amt = stod(a);
+                            double rate = stod(ls);
+                            if (rate > 1.0 || rate < 0) {
+                                if (amt < 1000000) rate = 0.04;
+                                else if (amt < 10000000) rate = 0.045;
+                                else if (amt < 100000000) rate = 0.05;
+                                else rate = 0.06;
+                            }
+                            nextVay.emplace_back(s, amt, stoll(h), rate); 
+                        } catch (...) {}
                     }
                     else if (mode == "l_his") {
                         string s, n, tg, hv, st, ls, tt;
@@ -225,7 +240,7 @@ namespace BankSystem {
             ParseTab(GetJSONValue(all, "loan_history"), "l_his");
 
             Lock();
-            if (!isSaving) {
+            if (!isSaving && !dirty) {
                 dsTK = nextTK; dsLS = nextLS; dsYeuCau = nextYeuCau; dsVay = nextVay; dsLichSuVay = nextLichSuVay;
                 thoiGianTinhLai = GetJSONValue(all, "system"); dsCustomers = GetJSONValue(all, "customers");
             }
@@ -233,8 +248,10 @@ namespace BankSystem {
         }
 
         void Save() {
+            if (isSaving) return;
             Lock();
             isSaving = true;
+            dirty = false;
 
             for (auto& tk : dsTK) {
                 double val = tk->GetLoai() == "TinDung" ? tk->GetHanMucTinDung() : tk->GetSoDu();
@@ -264,42 +281,41 @@ namespace BankSystem {
             for (auto& v : dsVay) loanSS << "'" << v.stk << ";" << fixed << setprecision(0) << v.soTien << ";" << v.hanTra << ";" << fixed << setprecision(4) << v.laiSuat << "\n";
             for (auto& l : dsLichSuVay) lhisSS << "'" << l.stk << ";" << l.ten << ";" << l.thoiGian << ";" << l.hanVay << ";" << fixed << setprecision(0) << l.soTien << ";" << fixed << setprecision(4) << l.laiSuat << ";" << l.trangThai << "\n";
 
-            string json = "{\"bulk\":{\"accounts\":\"" + Escape(accSS.str()) + "\",\"history\":\"" + Escape(hisSS.str()) + "\",\"requests\":\"" + Escape(reqSS.str()) + "\",\"loans\":\"" + Escape(loanSS.str()) + "\",\"loan_history\":\"" + Escape(lhisSS.str()) + "\",\"system\":\"" + Escape(thoiGianTinhLai) + "\",\"customers\":\"" + Escape(dsCustomers) + "\"}}";
+            string json = "{\"bulk\":{\"accounts\":\"" + JSON_Escape(accSS.str()) + "\",\"history\":\"" + JSON_Escape(hisSS.str()) + "\",\"requests\":\"" + JSON_Escape(reqSS.str()) + "\",\"loans\":\"" + JSON_Escape(loanSS.str()) + "\",\"loan_history\":\"" + JSON_Escape(lhisSS.str()) + "\",\"system\":\"" + JSON_Escape(thoiGianTinhLai) + "\",\"customers\":\"" + JSON_Escape(dsCustomers) + "\"}}";
             Unlock();
 
+            SaveContext* ctx = new SaveContext{json, this};
 #ifdef _WIN32
-            string* pJson = new string(json);
-            _beginthreadex(NULL, 0, SaveThreadFunc, pJson, 0, NULL);
+            _beginthreadex(NULL, 0, SaveThreadFunc, ctx, 0, NULL);
 #else
-            // Simple sync for non-windows to avoid more complexity for now
+            // Simple logic for non-windows
             string tmpFile = "post_" + to_string(time(0)) + ".json";
             ofstream f(tmpFile); f << json; f.close();
             string cmd = "curl -k -L -s -X POST -H \"Content-Type: application/json\" -d @" + tmpFile + " \"" + GS_URL + "\" > /dev/null 2>&1 && rm " + tmpFile + " &";
             system(cmd.c_str());
+            FinishSaving();
 #endif
-            lastSave = time(0);
-            isSaving = false;
         }
 
         void Add(shared_ptr<TaiKhoan> tk) {
             Lock(); dsTK.push_back(tk); Unlock();
             GhiLog(tk->GetSoTaiKhoan(), "KHOI_TAO", tk->GetSoDu(), "Mo tai khoan");
-            Save();
+            SetDirty();
         }
 
-        void AddYeuCau(YeuCau y) { Lock(); dsYeuCau.push_back(y); Unlock(); Save(); }
+        void AddYeuCau(YeuCau y) { Lock(); dsYeuCau.push_back(y); Unlock(); SetDirty(); }
 
         bool KiemTraVaXoaYeuCau(string stk, string type) {
             Lock();
             auto it = find_if(dsYeuCau.begin(), dsYeuCau.end(), [&](const YeuCau& r) { return r.stk == stk && r.type == type; });
-            if (it != dsYeuCau.end()) { dsYeuCau.erase(it); Unlock(); Save(); return true; }
+            if (it != dsYeuCau.end()) { dsYeuCau.erase(it); Unlock(); SetDirty(); return true; }
             Unlock(); return false;
         }
 
         void XoaYeuCau(string stk, string type) {
             Lock();
             dsYeuCau.erase(remove_if(dsYeuCau.begin(), dsYeuCau.end(), [&](const YeuCau& r) { return r.stk == stk && r.type == type; }), dsYeuCau.end());
-            Unlock(); Save();
+            Unlock(); SetDirty();
         }
 
         void AddVay(string stk, double amt, int phut) {
@@ -318,14 +334,14 @@ namespace BankSystem {
             }
             Unlock();
             GhiLog(stk, "VAY_TIEN", amt, "Duyet khoan vay (" + to_string(phut) + " phut)");
-            Save();
+            SetDirty();
         }
 
         void XoaTK(string stk) {
             Lock();
             dsTK.erase(remove_if(dsTK.begin(), dsTK.end(), [&](const shared_ptr<TaiKhoan>& t) { return t->GetSoTaiKhoan() == stk; }), dsTK.end());
             dsLS.erase(stk);
-            Unlock(); Save();
+            Unlock(); SetDirty();
         }
 
         bool TatToanVay(string stk) {
@@ -344,7 +360,7 @@ namespace BankSystem {
                 for (auto& l : dsLichSuVay) if (l.stk == stk && l.trangThai == "Chưa trả") { l.trangThai = "Đã trả"; break; }
                 Unlock();
                 GhiLog(stk, "TRA_NO", -tongNo, "Tat toan khoan vay");
-                Save();
+                SetDirty();
                 return true;
             }
             Unlock(); return false;
@@ -357,7 +373,13 @@ namespace BankSystem {
                 if (lai > 0) { tk->NapTien(lai); dsLS[tk->GetSoTaiKhoan()].emplace_back("LAI", lai, "Lai dinh ky"); }
             }
             thoiGianTinhLai = GetCurrentTimeStr();
-            Unlock(); Save();
+            Unlock(); SetDirty();
+        }
+
+        void Sync() {
+            if (isSaving) return;
+            if (dirty) Save();
+            else Load();
         }
 
         vector<shared_ptr<TaiKhoan>> GetDS() { Lock(); auto res = dsTK; Unlock(); return res; }
