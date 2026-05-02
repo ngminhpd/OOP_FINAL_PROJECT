@@ -29,7 +29,7 @@ Huỳnh Tấn Đạt
 |  27/4/26  |       Sửa lỗi đọc và ghi lịch sử giao dịch     |   **Đạt**         | Hoàn thành               | 9c9725bb0f06d37fa3622f65dd56a4f59740d357    |
 |  28/4/26  |       Fix: lỗi không check PIN, mất nút RESET  |   **Quân**        | Hoàn thành    | 93c43d58bf1d2b527dcfb389e9c864b857056ee7    |
 |  28/4/26  |           Fix: Cố định lãi suất vay            |   **Khang**       | Hoàn thành    | a6bc7ee8c9b3322a0093ce5bebe71027a1435bbe    |
-|  28/4/26  |Hiển thị thời gian thực và chống duyệt trùng lặp|   **Khang**       | Hoàn thành    | ...                                         |
+|  28/4/26  |Hiển thị thời gian thực và chống duyệt trùng lặp|   **Khang**       | Hoàn thành    | a6bc7ee8c9b3322a0093ce5bebe71027a1435bbe    |
 |  01/5/26  |Chỉnh sủa lại 1 vài cấu trúc theo OOP và thêm test_script.py để tự động kiểm tra các chức năng của dự án|   **Đạt**         | Hoàn thành    | 762ceb5001a14cd2879520517db8f80490c613ee    |
 |  01/5/26  |           Fix: lỗi format                      |   **Đạt/Khang**         | Hoàn thành    | 0f90ef597501a2a4db83cf912bc6f5885c2ac510    |
 ## Nhiệm vụ
